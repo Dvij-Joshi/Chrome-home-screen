@@ -779,7 +779,7 @@
       <!-- [IMG: WEATHER | 80x80px | TARGET: weather icon | PROMPT: stylized sun illustration, warm amber and golden yellow, soft rays, minimal flat design, transparent background preferred, no text | MODEL: flux-dev ] -->
       <img src="./assets/WEATHER.webp" class="weather-img" alt="Weather" onerror="this.style.display='none'">
       <div class="weather-val" id="weatherTemp">--°C</div>
-      <div class="weather-city">Vadodara</div>
+      <div class="weather-city" id="weatherCity">Vadodara</div>
       <div class="weather-cond" id="weatherCond">--</div>
     </div>
 
@@ -1172,9 +1172,12 @@ async function loadLC() {
         lcMap[new Date(Number(ts) * 1000).toISOString().slice(0, 10)] = rawCal[ts];
       });
 
-      const year = new Date().getFullYear();
       const days = [];
-      for (let d = new Date(`${year}-01-01`); d.getFullYear() === year; d.setDate(d.getDate() + 1)) {
+      const today = new Date();
+      // Match GitHub's format: rolling last 365 days
+      for (let i = 364; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
         const k = d.toISOString().slice(0, 10);
         days.push({ date: k, count: lcMap[k] || 0 });
       }
