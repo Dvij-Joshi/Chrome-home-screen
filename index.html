@@ -995,52 +995,117 @@ function renderMap(cont, days) {
 async function loadGH() {
   try {
     const res = await fetch('https://github-contributions-api.jogruber.de/v4/Dvij-Joshi?y=last');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+
+    // Sort oldest → newest
+    const sorted = (data.contributions || []).sort((a, b) => a.date.localeCompare(b.date));
+
     let total = 0, maxS = 0, curS = 0, tempS = 0;
-    const sorted = data.contributions.sort((a,b) => a.date.localeCompare(b.date));
+    const todayStr = new Date().toISOString().slice(0, 10);
+
     sorted.forEach(d => {
       total += d.count;
-      if (d.count > 0) { tempS++; maxS = Math.max(maxS, tempS); } else tempS = 0;
+      if (d.count > 0) { tempS++; if (tempS > maxS) maxS = tempS; }
+      else tempS = 0;
     });
-    // cur streak (simple walk back from end)
-    for (let i = sorted.length-1; i>=0; i--) { if (sorted[i].count>0) curS++; else if (sorted[i].date < new Date().toISOString().slice(0,10)) break; }
-    
-    document.getElementById('ghTotalVal').textContent = total;
+
+    // Walk back from today to compute current streak
+    // (ignore today if it has no contributions yet — it's still in progress)
+    const past = sorted.filter(d => d.date <= todayStr);
+    for (let i = past.length - 1; i >= 0; i--) {
+      if (past[i].count > 0) curS++;
+      else { if (i < past.length - 1) break; } // allow today to be 0
+    }
+
+    document.getElementById('ghTotalVal').textContent = total.toLocaleString();
     document.getElementById('ghCurStreak').textContent = curS;
     document.getElementById('ghMaxStreak').textContent = maxS;
-    document.getElementById('mRight').textContent = `${total} CONTRIBUTIONS`;
+    document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
     renderMap(document.getElementById('ghWrap'), sorted);
-  } catch(e) { document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>'; }
+  } catch(e) {
+    document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>';
+  }
 }
 loadGH();
 
+/* ============================================================
+   LEETCODE — uses alfa-leetcode-api.onrender.com (CORS-friendly)
+   Three parallel calls:
+     1. /username          → streak, totalActiveDays
+     2. /username/solved   → easySolved, mediumSolved, hardSolved, solvedProblem
+     3. /username/calendar → submissionCalendar (timestamp→count map)
+============================================================ */
 async function loadLC() {
+  const BASE = 'https://alfa-leetcode-api.onrender.com';
+  const USER = 'dvij-joshi';
+  const wrap = document.getElementById('lcWrap');
+
   try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://leetcode.com/graphql')}`;
-    const res = await fetch(proxyUrl, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: `{matchedUser(username:"dvij-joshi"){userCalendar(year:2026){streak totalActiveDays submissionCalendar}}}` })
-    });
-    const data = await res.json();
-    const calStr = data?.data?.matchedUser?.userCalendar?.submissionCalendar;
-    if (!calStr) throw new Error();
-    
-    document.getElementById('lcTotalVal').textContent = data.data.matchedUser.userCalendar.totalActiveDays;
-    document.getElementById('lcCurStreak').textContent = data.data.matchedUser.userCalendar.streak;
-    
-    const calMap = JSON.parse(calStr);
-    const lcMap = {};
-    Object.keys(calMap).forEach(ts => { lcMap[new Date(ts*1000).toISOString().slice(0,10)] = calMap[ts]; });
-    
-    const days = [];
-    const year = new Date().getFullYear();
-    for (let d = new Date(`${year}-01-01`); d <= new Date(`${year}-12-31`); d.setDate(d.getDate()+1)) {
-      const k = d.toISOString().slice(0,10);
-      days.push({date: k, count: lcMap[k] || 0});
+    // Fire all three requests in parallel
+    const [rProfile, rSolved, rCal] = await Promise.all([
+      fetch(`${BASE}/${USER}`).catch(() => null),
+      fetch(`${BASE}/${USER}/solved`).catch(() => null),
+      fetch(`${BASE}/${USER}/calendar`).catch(() => null)
+    ]);
+
+    // --- Profile: streak & totalActiveDays ---
+    if (rProfile && rProfile.ok) {
+      const p = await rProfile.json();
+      const streak   = p.streak        ?? p.currentStreak        ?? null;
+      const active   = p.totalActiveDays ?? p.totalActiveDays    ?? null;
+      if (streak  !== null) {
+        document.getElementById('lcCurStreak').textContent = streak;
+        // Also update the DSA Tracker streak (real data wins over manual)
+        document.getElementById('dsaStreak').textContent = streak;
+        LS.set('streak', String(streak));
+      }
+      if (active  !== null) {
+        document.getElementById('lcTotalVal').textContent = active;
+      }
     }
-    renderMap(document.getElementById('lcWrap'), days);
+
+    // --- Solved: difficulty breakdown & total ---
+    if (rSolved && rSolved.ok) {
+      const s = await rSolved.json();
+      const total  = s.solvedProblem  ?? s.totalSolved  ?? null;
+      const easy   = s.easySolved     ?? null;
+      const medium = s.mediumSolved   ?? null;
+      const hard   = s.hardSolved     ?? null;
+      if (total  !== null) {
+        document.getElementById('dsaSolved').textContent = total;
+        LS.set('solved', String(total));
+      }
+      if (easy   !== null) { document.getElementById('dsaEasy').textContent = easy;   LS.set('easy',   String(easy));   }
+      if (medium !== null) { document.getElementById('dsaMed').textContent  = medium; LS.set('medium', String(medium)); }
+      if (hard   !== null) { document.getElementById('dsaHard').textContent = hard;   LS.set('hard',   String(hard));   }
+    }
+
+    // --- Calendar: heatmap ---
+    if (rCal && rCal.ok) {
+      const c = await rCal.json();
+      // API returns { submissionCalendar: "{ts:count,...}" } or the object directly
+      let rawCal = c.submissionCalendar ?? c;
+      if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
+
+      const lcMap = {};
+      Object.keys(rawCal).forEach(ts => {
+        lcMap[new Date(Number(ts) * 1000).toISOString().slice(0, 10)] = rawCal[ts];
+      });
+
+      const year = new Date().getFullYear();
+      const days = [];
+      for (let d = new Date(`${year}-01-01`); d.getFullYear() === year; d.setDate(d.getDate() + 1)) {
+        const k = d.toISOString().slice(0, 10);
+        days.push({ date: k, count: lcMap[k] || 0 });
+      }
+      renderMap(wrap, days);
+    } else {
+      throw new Error('Calendar fetch failed');
+    }
+
   } catch(e) {
-    document.getElementById('lcWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data — CORS may be blocking. <a href="https://leetcode.com/u/dvij-joshi" style="color:var(--color-accent)">Open LeetCode to sync →</a></span>';
+    wrap.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/dvij-joshi" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>';
   }
 }
 loadLC();
