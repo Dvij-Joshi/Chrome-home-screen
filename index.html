@@ -1634,12 +1634,22 @@ loadGitHub();
    LEETCODE HEATMAP
    Strategy: try alfa-leetcode-api (CORS-friendly) → allorigins proxy → graceful fallback
 ============================================================ */
-async function parseLCCalendar(rawCalStr, totalActiveDays, streak, username) {
+async function parseLCCalendar(rawCalStr, totalActiveDays, streak, username, solved) {
   const year = new Date().getFullYear();
   const wrap = document.getElementById('lcHeatmapWrap');
 
   document.getElementById('lcTotal').textContent = totalActiveDays || '—';
   document.getElementById('lcStreak').textContent = streak || '—';
+
+  // Update main DSA tracker with real stats
+  if (streak !== undefined && streak !== null) {
+    document.getElementById('streakVal').textContent = streak;
+    LS.set('streak', streak);
+  }
+  if (solved !== undefined && solved !== null) {
+    document.getElementById('solvedVal').textContent = solved;
+    LS.set('solved', solved);
+  }
 
   const rawCal = JSON.parse(rawCalStr || '{}');
 
@@ -1676,12 +1686,19 @@ async function loadLeetCode() {
 
   // ── Strategy 1: alfa-leetcode-api (CORS-enabled public mirror) ──
   try {
-    const res = await fetch(
-      `https://alfa-leetcode-api.onrender.com/${username}/calendar`,
-      { signal: AbortSignal.timeout(8000) }
-    );
-    if (!res.ok) throw new Error(`alfa-api HTTP ${res.status}`);
-    const data = await res.json();
+    const [resCal, resSolved] = await Promise.all([
+      fetch(`https://alfa-leetcode-api.onrender.com/${username}/calendar`, { signal: AbortSignal.timeout(8000) }),
+      fetch(`https://alfa-leetcode-api.onrender.com/${username}/solved`, { signal: AbortSignal.timeout(8000) }).catch(() => null)
+    ]);
+    if (!resCal.ok) throw new Error(`alfa-api HTTP ${resCal.status}`);
+    const data = await resCal.json();
+    
+    let solvedCount = null;
+    if (resSolved && resSolved.ok) {
+      const solvedData = await resSolved.json();
+      solvedCount = solvedData.solvedProblem;
+    }
+
     // Returns { submissionCalendar, totalActiveDays, streak }
     if (!data.submissionCalendar) throw new Error('No submissionCalendar in response');
     await parseLCCalendar(
@@ -1690,7 +1707,8 @@ async function loadLeetCode() {
         : JSON.stringify(data.submissionCalendar),
       data.totalActiveDays,
       data.streak,
-      username
+      username,
+      solvedCount
     );
     return; // ✅ success
   } catch (e) {
@@ -1700,7 +1718,7 @@ async function loadLeetCode() {
   // ── Strategy 2: allorigins.win proxy around leetcode.com GraphQL ──
   try {
     const gqlBody = JSON.stringify({
-      query: `{matchedUser(username:"${username}"){userCalendar(year:${year}){streak totalActiveDays submissionCalendar}}}`,
+      query: `{matchedUser(username:"${username}"){userCalendar(year:${year}){streak totalActiveDays submissionCalendar} submitStatsGlobal{acSubmissionNum{difficulty count}}}}`,
     });
     const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://leetcode.com/graphql')}`;
     const res = await fetch(proxyUrl, {
@@ -1713,7 +1731,11 @@ async function loadLeetCode() {
     const data = await res.json();
     const cal = data?.data?.matchedUser?.userCalendar;
     if (!cal?.submissionCalendar) throw new Error('No calendar in proxy response');
-    await parseLCCalendar(cal.submissionCalendar, cal.totalActiveDays, cal.streak, username);
+    
+    const stats = data?.data?.matchedUser?.submitStatsGlobal?.acSubmissionNum;
+    const solvedCount = stats?.find(x => x.difficulty === 'All')?.count;
+
+    await parseLCCalendar(cal.submissionCalendar, cal.totalActiveDays, cal.streak, username, solvedCount);
     return; // ✅ success
   } catch (e) {
     console.warn('[LeetCode] allorigins proxy failed:', e.message);
