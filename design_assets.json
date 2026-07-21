@@ -1,0 +1,35 @@
+{
+  "project": "Chrome New Tab Dashboard — Dvij",
+  "generated_at": "2026-07-21",
+  "theme_palette": "Daylight (Warm Editorial)",
+  "assets": [
+    {
+      "id": "TEXTURE_BG",
+      "type": "background",
+      "placement": "body background-image, behind all content, fixed attachment, cover size",
+      "dimensions": { "width": 1920, "height": 1080, "unit": "px" },
+      "target_path": "./assets/TEXTURE_BG.webp",
+      "css_var": "--img-texture-bg",
+      "prompt": "Extremely subtle warm paper grain texture on warm off-white base (#F2EDE8). Organic micro-grain noise, near-invisible variation in tone — slightly warmer toward left edge, cooler toward right. No discernible pattern, no lines, no geometric repetition. Just the softest analog warmth that prevents digital flatness. Like a premium uncoated stock paper under even studio lighting. Tileable seamlessly at 1920x1080. Art style: analog grain scan, photographic paper texture. Mood: calm, editorial, human, warm.",
+      "negative_prompt": "visible pattern, tiling seams, lines, gradients, color shifts, watermark, text, dark areas, stock photo look, noise grain that reads as salt-and-pepper, harsh contrast",
+      "style_reference": "Premium paper texture, editorial magazine stock",
+      "model_target": "flux-dev",
+      "aspect_ratio": "16:9",
+      "status": "pending"
+    },
+    {
+      "id": "DSA_ACCENT",
+      "type": "illustration",
+      "placement": "top-right corner of the DSA Tracker card, 80x80px display size, decorative only",
+      "dimensions": { "width": 120, "height": 120, "unit": "px" },
+      "target_path": "./assets/DSA_ACCENT.webp",
+      "css_var": "N/A (inline SVG stand-in active)",
+      "prompt": "Minimal abstract geometric mark on transparent background. A single node-and-edge graph data structure element: one central filled circle (6px radius) connected by clean straight line edges to three smaller satellite circles (3-4px radius), arranged asymmetrically — two above at angles, one below centered. Pure flat color in burnt sienna (#C95F3A). No gradients. No shadows. No background fill. Stroke weight 2px on edges, solid fills on circles. Two dashed secondary edges extending to implied off-canvas nodes. Centered composition with generous padding on 120x120px canvas. Art style: flat SVG editorial illustration, design system icon quality. Mood: precise, technical, warm, minimal.",
+      "negative_prompt": "gradients, shadows, 3D rendering, photorealism, text, labels, color other than #C95F3A, multiple colors, complex illustration, decorative flourishes, rounded corners on edges, glow effects",
+      "style_reference": "Flat graph node illustration, design system documentation mark",
+      "model_target": "flux-dev",
+      "aspect_ratio": "1:1",
+      "status": "pending — inline SVG stand-in active"
+    }
+  ]
+}
