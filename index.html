@@ -212,7 +212,7 @@
     .search-bar input { flex: 1; background: transparent; border: none; font-size: var(--text-base); }
     .search-bar input:focus { outline: none; }
     .search-bar .shortcut { font-family: var(--font-data); font-size: var(--text-xs); color: var(--color-ink-muted); }
-    .search-chips { display: flex; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: wrap; }
+    .search-chips { display: flex; gap: var(--space-2); margin-top: var(--space-2); flex-wrap: nowrap; overflow-x: auto; }
     .chip {
       display: inline-flex;
       align-items: center;
@@ -247,18 +247,18 @@
       display: flex;
       flex-direction: column;
       align-items: flex-end;
-      gap: var(--space-3);
+      gap: var(--space-2);
     }
     .nav-links { display: flex; gap: var(--space-3); font-size: var(--text-sm); font-weight: 500; align-items: center; }
     .nav-links a { color: var(--color-ink); }
     .nav-links a:hover { color: var(--color-accent); }
     .avatar {
-      width: 36px; height: 36px;
+      width: 32px; height: 32px;
       border-radius: 50%;
       background: var(--color-accent);
       color: #fff;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: var(--text-lg);
+      font-weight: 700; font-size: var(--text-base);
     }
     .theme-row {
       display: flex;
@@ -517,7 +517,12 @@
     <div class="card">
       <div class="card-header">
         <span class="card-title">AI Coach</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+        <!-- Sparkle / wand icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.8">
+          <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z"/>
+          <path d="M5 17l.75 2.25L8 20l-2.25.75L5 23l-.75-2.25L2 20l2.25-.75z"/>
+          <path d="M19 2l.5 1.5L21 4l-1.5.5L19 6l-.5-1.5L17 4l1.5-.5z"/>
+        </svg>
       </div>
       <div class="coach-sub">Today's Recommendation</div>
       <div class="coach-body" id="coachBody">Solve 2 Medium problems on Graphs to maintain your streak.</div>
@@ -575,7 +580,7 @@
         <div class="gh-stat"><span class="gh-val" id="lcTotalVal">39</span><span class="gh-lbl">active days</span></div>
         <div class="gh-stat"><span class="gh-val" id="lcCurStreak">36</span><span class="gh-lbl">current streak</span></div>
       </div>
-      <div class="heatmap-wrapper" id="lcWrap"></div>
+      <div class="heatmap-wrapper" id="lcWrap" style="min-height:80px"><span style="color:var(--color-ink-muted);font-size:12px">Loading LeetCode activity…</span></div>
     </div>
 
     <div class="card">
@@ -1239,31 +1244,44 @@ document.addEventListener('keydown', e => {
 });
 
 /* ============================================================
-   YOUTUBE PLAYLIST THUMBNAILS (oEmbed — no API key needed)
-   YouTube exposes https://www.youtube.com/oembed?url=...&format=json
-   with full CORS support. Each playlist img has data-yt-url set.
-   On failure we show a styled red YT fallback div.
+   YOUTUBE THUMBNAILS
+   Strategy per URL type:
+   - playlist?list=XXX   → oEmbed works perfectly
+   - /watch?v=XXX        → direct i.ytimg.com thumbnail (instant, no CORS)
+   - @handle / /c/ / /channel/ → oEmbed works for channels
+   - Hardcoded fallback thumbnailUrl in defaultPlaylists for channels
+     that have known video IDs we can use directly.
 ============================================================ */
 async function loadPlThumbnails() {
   const imgs = document.querySelectorAll('.pl-img[data-yt-url]');
   await Promise.all(Array.from(imgs).map(async img => {
+    // If a sibling with a rendered fallback already exists, skip
+    if (img.style.display === 'none') return;
+    
     const url = img.dataset.ytUrl;
+    
+    // Direct video thumbnail — no fetch needed
+    const vidMatch = url.match(/(?:v=|youtu\.be\/)([\w-]{11})/);
+    if (vidMatch) {
+      img.src = `https://i.ytimg.com/vi/${vidMatch[1]}/mqdefault.jpg`;
+      return;
+    }
+    
+    // oEmbed for playlists and channels
     const oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
     try {
       const res = await fetch(oEmbedUrl);
-      if (!res.ok) throw new Error(`oEmbed HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`oEmbed ${res.status}`);
       const data = await res.json();
-      if (data.thumbnail_url) {
-        img.src = data.thumbnail_url;
-        img.style.background = 'none';
-      } else throw new Error('No thumbnail');
-    } catch (e) {
-      // Graceful fallback: YouTube-red square with play icon
+      if (data.thumbnail_url) { img.src = data.thumbnail_url; return; }
+      throw new Error('no thumb');
+    } catch (_) {
+      // Fallback: YouTube-red square with play icon
       img.style.display = 'none';
-      const fallback = document.createElement('div');
-      fallback.style.cssText = 'width:44px;height:44px;border-radius:6px;background:#FF0000;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
-      fallback.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
-      img.parentNode.insertBefore(fallback, img);
+      const fb = document.createElement('div');
+      fb.style.cssText = 'width:44px;height:44px;border-radius:6px;background:#FF0000;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      fb.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      img.parentNode.insertBefore(fb, img);
     }
   }));
 }
@@ -1272,13 +1290,19 @@ async function loadPlThumbnails() {
    PLAYLISTS MANAGER
 ============================================================ */
 const defaultPlaylists = [
+  // Use a representative video URL for channels so the direct i.ytimg path works
   { url: "https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P", title: "Lo-Fi Coding Mix", src: "YouTube • Playlist" },
-  { url: "https://www.youtube.com/@CodeHelp", title: "DSA in One Shot", src: "CodeHelp • YouTube" },
-  { url: "https://www.youtube.com/@takeUforward", title: "Striver A2Z DSA Sheet", src: "takeUforward • YouTube" },
+  { url: "https://www.youtube.com/watch?v=WQoB2z67hvY", title: "DSA in One Shot", src: "CodeHelp • YouTube" },
+  { url: "https://www.youtube.com/watch?v=0bHoB32fuj0", title: "Striver A2Z DSA Sheet", src: "takeUforward • YouTube" },
   { url: "https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY", title: "175-Problem Playlist", src: "Pratyush • YouTube" }
 ];
 
+// Migrate: if stored playlists still use old @handle URLs, reset to defaults
 let playlists = LS.getObj('playlists', defaultPlaylists);
+if (playlists.some(p => p.url.includes('@CodeHelp') || p.url.includes('@takeUforward'))) {
+  playlists = defaultPlaylists;
+  LS.setObj('playlists', playlists);
+}
 
 function renderPlaylists() {
   const cont = document.getElementById('plList');
