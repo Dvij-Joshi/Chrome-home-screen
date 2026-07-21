@@ -103,6 +103,7 @@
       background-image: url('./assets/TEXTURE_BG.webp');
       background-blend-mode: multiply;
       position: relative;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     a { color: inherit; text-decoration: none; }
@@ -142,6 +143,11 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      transition: box-shadow 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover {
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
     }
     .card-header {
       display: flex;
@@ -156,6 +162,68 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       font-weight: 600;
+    }
+
+    /* ============================================================
+       ANIMATIONS
+    ============================================================ */
+    /* Shimmer skeleton */
+    @keyframes shimmer {
+      0%   { background-position: -400px 0; }
+      100% { background-position:  400px 0; }
+    }
+    .skeleton-heatmap {
+      width: 100%;
+      height: 90px;
+      border-radius: 6px;
+      background: linear-gradient(
+        90deg,
+        var(--color-surface-alt) 25%,
+        var(--color-border)      50%,
+        var(--color-surface-alt) 75%
+      );
+      background-size: 800px 100%;
+      animation: shimmer 1.6s ease-in-out infinite;
+    }
+
+    /* Card staggered entrance */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    .card {
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+    }
+    /* Row 1 */
+    .row-1 .card:nth-child(1) { animation-delay: 0.05s; }
+    .row-1 .card:nth-child(2) { animation-delay: 0.12s; }
+    .row-1 .card:nth-child(3) { animation-delay: 0.19s; }
+    /* Row 2 */
+    .row-2 .card:nth-child(1) { animation-delay: 0.26s; }
+    .row-2 .card:nth-child(2) { animation-delay: 0.33s; }
+    .row-2 .card:nth-child(3) { animation-delay: 0.40s; }
+    .row-2 .card:nth-child(4) { animation-delay: 0.47s; }
+    /* Row 3 */
+    .row-3 .card:nth-child(1) { animation-delay: 0.54s; }
+    .row-3 .card:nth-child(2) { animation-delay: 0.61s; }
+    .row-3 .card:nth-child(3) { animation-delay: 0.68s; }
+    .row-3 .card:nth-child(4) { animation-delay: 0.75s; }
+    /* Row 4 */
+    .row-4 .card:nth-child(1) { animation-delay: 0.82s; }
+    .row-4 .card:nth-child(2) { animation-delay: 0.88s; }
+    .row-4 .card:nth-child(3) { animation-delay: 0.94s; }
+    .row-4 .card:nth-child(4) { animation-delay: 1.00s; }
+    .row-4 .card:nth-child(5) { animation-delay: 1.06s; }
+    .row-4 .card:nth-child(6) { animation-delay: 1.12s; }
+
+    /* Heatmap cell reveal after data loads */
+    @keyframes cellPop {
+      from { opacity: 0; transform: scale(0.6); }
+      to   { opacity: 1; transform: scale(1);   }
+    }
+    .heatmap-cell.live {
+      animation: cellPop 0.25s ease forwards;
     }
 
     /* ============================================================
@@ -582,7 +650,7 @@
         <div class="gh-stat"><span class="gh-val" id="lcTotalVal">39</span><span class="gh-lbl">active days</span></div>
         <div class="gh-stat"><span class="gh-val" id="lcCurStreak">36</span><span class="gh-lbl">current streak</span></div>
       </div>
-      <div class="heatmap-wrapper" id="lcWrap" style="min-height:80px"><span style="color:var(--color-ink-muted);font-size:12px">Loading LeetCode activity…</span></div>
+      <div class="heatmap-wrapper" id="lcWrap" style="min-height:80px"><div class="skeleton-heatmap"></div></div>
     </div>
 
     <div class="card">
@@ -979,7 +1047,10 @@ function renderMap(cont, days) {
     if (m !== lastM && dateObj.getDate() <= 14) { mRow.appendChild(Object.assign(document.createElement('span'), {textContent: months[m]})); lastM = m; }
     
     const cell = document.createElement('div');
-    cell.className = 'heatmap-cell';
+    cell.className = 'heatmap-cell live';
+    // Stagger the pop animation per cell
+    cell.style.animationDelay = `${Math.min(i * 1.2, 300)}ms`;
+    cell.style.opacity = '0'; // start hidden, animation fills it
     let lvl = 0; if (d.count>0) lvl=1; if (d.count>2) lvl=2; if (d.count>5) lvl=3; if (d.count>10) lvl=4;
     cell.setAttribute('data-level', lvl);
     
@@ -996,6 +1067,9 @@ function renderMap(cont, days) {
 
 async function loadGH() {
   const ghUser = LS.get('ghUser', 'Dvij-Joshi');
+  // Show skeleton while loading
+  const ghWrap = document.getElementById('ghWrap');
+  ghWrap.innerHTML = '<div class="skeleton-heatmap"></div>';
   try {
     const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${ghUser}?y=last`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1043,6 +1117,8 @@ async function loadLC() {
   const BASE = 'https://alfa-leetcode-api.onrender.com';
   const USER = LS.get('lcUser', 'dvij-joshi');
   const wrap = document.getElementById('lcWrap');
+  // Show skeleton while API wakes up (Render free tier cold-start)
+  wrap.innerHTML = '<div class="skeleton-heatmap"></div>';
 
   try {
     // Fire all three requests in parallel
