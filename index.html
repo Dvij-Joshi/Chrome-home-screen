@@ -1695,6 +1695,10 @@ document.getElementById('settingsClose').addEventListener('click', closeSettings
 settingsOverlay.addEventListener('click', e => { if (e.target === settingsOverlay) closeSettings(); });
 
 document.getElementById('settingsSave').addEventListener('click', () => {
+  // Snapshot old usernames before writing
+  const prevLC = LS.get('lcUser', 'dvij-joshi');
+  const prevGH = LS.get('ghUser', 'Dvij-Joshi');
+
   const apiKey   = document.getElementById('settingsApiKey').value.trim();
   const linkedin = document.getElementById('settingsLinkedIn').value.trim();
   const lcUser   = document.getElementById('settingsLCUser').value.trim();
@@ -1702,13 +1706,15 @@ document.getElementById('settingsSave').addEventListener('click', () => {
 
   if (apiKey)   LS.set('groqApiKey', apiKey);
   if (linkedin) { LS.set('linkedin', linkedin); document.getElementById('linkedInLink').href = linkedin; }
-  if (lcUser)   { LS.set('lcUser', lcUser); }
-  if (ghUser)   { LS.set('ghUser', ghUser); }
+  if (lcUser)   LS.set('lcUser', lcUser);
+  if (ghUser)   LS.set('ghUser', ghUser);
 
   closeSettings();
 
-  // Reload heatmaps if usernames changed
-  if (lcUser !== LS.get('lcUser', 'dvij-joshi') || ghUser !== LS.get('ghUser', 'Dvij-Joshi')) {
+  // Reload heatmaps if usernames actually changed
+  const newLC = lcUser || prevLC;
+  const newGH = ghUser || prevGH;
+  if (newLC !== prevLC || newGH !== prevGH) {
     loadGitHub();
     loadLeetCode();
   }
