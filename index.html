@@ -31,15 +31,8 @@
       --color-heatmap-4:  #8B3A20;
 
       /* [IMG: TEXTURE_BG | 1920x1080px | TARGET: body background, behind all content]
-         PROMPT: Extremely subtle warm paper grain texture, organic noise on a warm off-white base (#F2EDE8),
-         micro-grain film texture with near-invisible organic variation, slightly warmer on left edge,
-         no pattern, no lines, no geometric elements, no color shifts — just the softest possible analog
-         warmth that prevents digital flatness. Tileable seamlessly. Art style: analog grain scan,
-         like lightly textured premium paper under studio lighting. Mood: calm, editorial, human.
-         NEGATIVE: visible pattern, lines, gradients, color, watermark, text, dark areas, stock paper look
-         MODEL: flux-dev
-         STATUS: pending */
-      --img-texture-bg: none; /* Replace with: url('./assets/TEXTURE_BG.webp') */
+         STATUS: placed — ./assets/TEXTURE_BG.webp */
+      --img-texture-bg: url('./assets/TEXTURE_BG.webp');
     }
 
     [data-theme="arctic"] {
@@ -1055,19 +1048,16 @@
              NEGATIVE: gradients, shadows, 3D rendering, photorealism, text, multiple colors.
              MODEL: flux-dev
              STATUS: pending -->
+        <!-- [IMG: DSA_ACCENT | 120x120px | STATUS: placed — ./assets/DSA_ACCENT.webp] -->
         <div class="dsa-accent-placeholder" aria-hidden="true">
-          <!-- Inline SVG stand-in matching DSA_ACCENT spec exactly -->
-          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="36" cy="36" r="5" fill="#C95F3A"/>
-            <line x1="36" y1="36" x2="18" y2="20" stroke="#C95F3A" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="18" cy="20" r="3" fill="#C95F3A"/>
-            <line x1="36" y1="36" x2="54" y2="20" stroke="#C95F3A" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="54" cy="20" r="3" fill="#C95F3A"/>
-            <line x1="36" y1="36" x2="36" y2="58" stroke="#C95F3A" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="36" cy="58" r="3" fill="#C95F3A"/>
-            <line x1="18" y1="20" x2="8" y2="36" stroke="#C95F3A" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/>
-            <line x1="54" y1="20" x2="64" y2="36" stroke="#C95F3A" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 3"/>
-          </svg>
+          <img
+            src="./assets/DSA_ACCENT.webp"
+            width="80"
+            height="80"
+            alt=""
+            aria-hidden="true"
+            style="object-fit: contain; display: block;"
+          />
         </div>
       </div>
 
@@ -1628,72 +1618,102 @@ loadGitHub();
 
 /* ============================================================
    LEETCODE HEATMAP
+   Strategy: try alfa-leetcode-api (CORS-friendly) → allorigins proxy → graceful fallback
 ============================================================ */
+async function parseLCCalendar(rawCalStr, totalActiveDays, streak, username) {
+  const year = new Date().getFullYear();
+  const wrap = document.getElementById('lcHeatmapWrap');
+
+  document.getElementById('lcTotal').textContent = totalActiveDays || '—';
+  document.getElementById('lcStreak').textContent = streak || '—';
+
+  const rawCal = JSON.parse(rawCalStr || '{}');
+
+  // Map each LC Unix-second timestamp → YYYY-MM-DD count
+  const lcDateMap = {};
+  Object.entries(rawCal).forEach(([tsStr, cnt]) => {
+    const ts = parseInt(tsStr, 10);
+    const d = new Date(ts * 1000);
+    const dateStr = d.toISOString().slice(0, 10);
+    lcDateMap[dateStr] = (lcDateMap[dateStr] || 0) + cnt;
+  });
+
+  // Fill every day of the year
+  const days = [];
+  const start = new Date(`${year}-01-01T00:00:00Z`);
+  const end   = new Date(`${year}-12-31T00:00:00Z`);
+  for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+    const dateStr = d.toISOString().slice(0, 10);
+    days.push({ date: dateStr, count: lcDateMap[dateStr] || 0 });
+  }
+
+  const weeks = buildWeeks(days);
+  const tooltip = document.getElementById('hmTooltip');
+  renderHeatmap(wrap, weeks, tooltip);
+}
+
 async function loadLeetCode() {
   const username = LS.get('lcUser', 'dvij-joshi');
   const wrap = document.getElementById('lcHeatmapWrap');
   const year = new Date().getFullYear();
 
   document.getElementById('lcYear').textContent = year;
+  wrap.innerHTML = '<span style="color:var(--color-ink-muted);font-family:var(--font-mono);font-size:var(--text-xs);">Loading LeetCode data...</span>';
 
-  const query = `{matchedUser(username:"${username}"){userCalendar(year:${year}){activeYears streak totalActiveDays submissionCalendar}}}`;
-
+  // ── Strategy 1: alfa-leetcode-api (CORS-enabled public mirror) ──
   try {
-    const res = await fetch('https://leetcode.com/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Referer': 'https://leetcode.com',
-      },
-      body: JSON.stringify({ query }),
-    });
+    const res = await fetch(
+      `https://alfa-leetcode-api.onrender.com/${username}/calendar`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) throw new Error(`alfa-api HTTP ${res.status}`);
+    const data = await res.json();
+    // Returns { submissionCalendar, totalActiveDays, streak }
+    if (!data.submissionCalendar) throw new Error('No submissionCalendar in response');
+    await parseLCCalendar(
+      typeof data.submissionCalendar === 'string'
+        ? data.submissionCalendar
+        : JSON.stringify(data.submissionCalendar),
+      data.totalActiveDays,
+      data.streak,
+      username
+    );
+    return; // ✅ success
+  } catch (e) {
+    console.warn('[LeetCode] alfa-api failed:', e.message);
+  }
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  // ── Strategy 2: allorigins.win proxy around leetcode.com GraphQL ──
+  try {
+    const gqlBody = JSON.stringify({
+      query: `{matchedUser(username:"${username}"){userCalendar(year:${year}){streak totalActiveDays submissionCalendar}}}`,
+    });
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent('https://leetcode.com/graphql')}`;
+    const res = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: gqlBody,
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
     const data = await res.json();
     const cal = data?.data?.matchedUser?.userCalendar;
-    if (!cal) throw new Error('No calendar data');
-
-    const rawCal = JSON.parse(cal.submissionCalendar || '{}');
-    document.getElementById('lcTotal').textContent = cal.totalActiveDays || 0;
-    document.getElementById('lcStreak').textContent = cal.streak || 0;
-
-    // Convert {timestamp: count} to [{date, count}]
-    // LeetCode timestamps are Unix seconds at UTC midnight for each submission day
-    // Build a Set of all known timestamps for fast O(1) lookup
-    const calEntries = Object.entries(rawCal); // [[tsStr, count], ...]
-
-    // Map each LC timestamp to a YYYY-MM-DD string
-    const lcDateMap = {};
-    calEntries.forEach(([tsStr, cnt]) => {
-      const ts = parseInt(tsStr, 10);
-      // UTC date
-      const d = new Date(ts * 1000);
-      const dateStr = d.toISOString().slice(0, 10);
-      lcDateMap[dateStr] = (lcDateMap[dateStr] || 0) + cnt;
-    });
-
-    // Fill every day of the year
-    const days = [];
-    const start = new Date(`${year}-01-01T00:00:00Z`);
-    const end   = new Date(`${year}-12-31T00:00:00Z`);
-    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
-      const dateStr = d.toISOString().slice(0, 10);
-      days.push({ date: dateStr, count: lcDateMap[dateStr] || 0 });
-    }
-
-    const weeks = buildWeeks(days);
-    const tooltip = document.getElementById('hmTooltip');
-    renderHeatmap(wrap, weeks, tooltip);
-
-  } catch (err) {
-    wrap.innerHTML = `<div class="heatmap-error">
-      Could not load LeetCode data — CORS may be blocking the request.
-      <a href="https://leetcode.com/u/${username}/" target="_blank" rel="noopener">Open LeetCode to sync →</a>
-    </div>`;
-    console.warn('[LeetCode heatmap]', err.message);
+    if (!cal?.submissionCalendar) throw new Error('No calendar in proxy response');
+    await parseLCCalendar(cal.submissionCalendar, cal.totalActiveDays, cal.streak, username);
+    return; // ✅ success
+  } catch (e) {
+    console.warn('[LeetCode] allorigins proxy failed:', e.message);
   }
+
+  // ── Strategy 3: graceful static fallback ──
+  wrap.innerHTML = `<div class="heatmap-error">
+    LeetCode data couldn't be fetched (CORS restriction on local file).
+    <a href="https://leetcode.com/u/${username}/" target="_blank" rel="noopener">Open LeetCode →</a>
+    <br><small style="font-family:var(--font-mono);font-size:10px;color:var(--color-ink-muted);margin-top:4px;display:block;">Tip: serve this file via a local server (e.g. VS Code Live Server) to bypass CORS.</small>
+  </div>`;
 }
 loadLeetCode();
+
 
 /* ============================================================
    SETTINGS PANEL
