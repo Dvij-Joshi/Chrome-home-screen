@@ -1,0 +1,14 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.suo
+.vscode/
+.idea/
+
+# Local env / secrets
+.env
+.env.local
+
+# Build artifacts (none expected — vanilla HTML project)
+dist/
+node_modules/
