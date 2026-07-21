@@ -1565,12 +1565,18 @@ async function loadGitHub() {
     let curStreak = 0, longestStreak = 0, tempStreak = 0;
     const sorted = [...contributions].sort((a,b) => a.date.localeCompare(b.date));
     const today = new Date().toISOString().slice(0,10);
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
 
-    for (let i = sorted.length - 1; i >= 0; i--) {
-      if (sorted[i].count > 0 && sorted[i].date <= today) {
+    // Walk backwards; allow today to be empty (streak continues from yesterday)
+    let checking = true;
+    for (let i = sorted.length - 1; i >= 0 && checking; i--) {
+      const d = sorted[i];
+      if (d.date > today) continue;
+      if (d.date === today && d.count === 0) continue; // today not yet committed
+      if (d.count > 0) {
         curStreak++;
-      } else if (sorted[i].date <= today) {
-        break;
+      } else {
+        checking = false;
       }
     }
     sorted.forEach(d => {
@@ -1629,17 +1635,27 @@ async function loadLeetCode() {
     document.getElementById('lcStreak').textContent = cal.streak || 0;
 
     // Convert {timestamp: count} to [{date, count}]
-    const janFirst = new Date(`${year}-01-01`).getTime() / 1000;
-    const decLast  = new Date(`${year}-12-31`).getTime() / 1000;
+    // LeetCode timestamps are Unix seconds at UTC midnight for each submission day
+    // Build a Set of all known timestamps for fast O(1) lookup
+    const calEntries = Object.entries(rawCal); // [[tsStr, count], ...]
 
-    const days = [];
-    // Fill every day of the year
-    for (let ts = janFirst; ts <= decLast; ts += 86400) {
+    // Map each LC timestamp to a YYYY-MM-DD string
+    const lcDateMap = {};
+    calEntries.forEach(([tsStr, cnt]) => {
+      const ts = parseInt(tsStr, 10);
+      // UTC date
       const d = new Date(ts * 1000);
-      const dateStr = d.toISOString().slice(0,10);
-      // LeetCode timestamps can be off by a few seconds, find nearest
-      const count = rawCal[String(ts)] || rawCal[String(ts - 1)] || rawCal[String(ts + 1)] || 0;
-      days.push({ date: dateStr, count });
+      const dateStr = d.toISOString().slice(0, 10);
+      lcDateMap[dateStr] = (lcDateMap[dateStr] || 0) + cnt;
+    });
+
+    // Fill every day of the year
+    const days = [];
+    const start = new Date(`${year}-01-01T00:00:00Z`);
+    const end   = new Date(`${year}-12-31T00:00:00Z`);
+    for (let d = new Date(start); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const dateStr = d.toISOString().slice(0, 10);
+      days.push({ date: dateStr, count: lcDateMap[dateStr] || 0 });
     }
 
     const weeks = buildWeeks(days);
