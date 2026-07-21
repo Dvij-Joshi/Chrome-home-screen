@@ -470,8 +470,8 @@
         </div>
       </div>
       <div class="nav-links">
-        <a href="https://github.com/Dvij-Joshi" target="_blank">GitHub</a>
-        <a href="https://leetcode.com/u/dvij-joshi/" target="_blank">LeetCode</a>
+        <a href="https://github.com/Dvij-Joshi" target="_blank" class="gh-nav-link">GitHub</a>
+        <a href="https://leetcode.com/u/dvij-joshi/" target="_blank" class="lc-nav-link">LeetCode</a>
         <a href="#" id="linkedInBtn" target="_blank">LinkedIn</a>
         <div class="avatar">D</div>
       </div>
@@ -684,8 +684,8 @@
     <div class="card">
       <div class="card-header"><span class="card-title">QUICK ACCESS</span></div>
       <div class="qa-grid">
-        <a href="https://github.com/Dvij-Joshi" class="qa-item" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"></path></svg><span class="qa-lbl">GitHub</span></a>
-        <a href="https://leetcode.com/u/dvij-joshi/" class="qa-item" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg><span class="qa-lbl">LeetCode</span></a>
+        <a href="https://github.com/Dvij-Joshi" class="qa-item gh-nav-link" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"></path></svg><span class="qa-lbl">GitHub</span></a>
+        <a href="https://leetcode.com/u/dvij-joshi/" class="qa-item lc-nav-link" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg><span class="qa-lbl">LeetCode</span></a>
         <a href="https://dvij-joshi.vercel.app" id="portfolioBtn" class="qa-item" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span class="qa-lbl">Portfolio</span></a>
         <a href="https://linkedin.com/in/dvij-joshi" id="linkInQa" class="qa-item" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg><span class="qa-lbl">LinkedIn</span></a>
         <a href="https://mail.google.com" class="qa-item" target="_blank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg><span class="qa-lbl">Gmail</span></a>
@@ -746,14 +746,27 @@
 </div>
 
 <div class="overlay" id="settingsModal">
-  <div class="modal">
+  <div class="modal" style="width:460px">
     <h2>Settings</h2>
+
+    <label>GitHub Username</label>
+    <input type="text" id="setGhUser" placeholder="e.g. Dvij-Joshi">
+
+    <label>LeetCode Username</label>
+    <input type="text" id="setLcUser" placeholder="e.g. dvij-joshi">
+
+    <label>City (for Weather)</label>
+    <input type="text" id="setCity" placeholder="e.g. Vadodara">
+
     <label>LinkedIn URL</label>
     <input type="text" id="setLinkedIn">
+
     <label>Portfolio URL</label>
     <input type="text" id="setPortfolio">
+
     <label>Groq API Key</label>
     <input type="password" id="setGroq">
+
     <div class="modal-btns">
       <button class="btn-outline" id="setCloseBtn">Cancel</button>
       <button class="btn-primary" id="setSaveBtn" style="padding:8px 16px;width:auto">Save Changes</button>
@@ -982,8 +995,9 @@ function renderMap(cont, days) {
 }
 
 async function loadGH() {
+  const ghUser = LS.get('ghUser', 'Dvij-Joshi');
   try {
-    const res = await fetch('https://github-contributions-api.jogruber.de/v4/Dvij-Joshi?y=last');
+    const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${ghUser}?y=last`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -1027,7 +1041,7 @@ loadGH();
 ============================================================ */
 async function loadLC() {
   const BASE = 'https://alfa-leetcode-api.onrender.com';
-  const USER = 'dvij-joshi';
+  const USER = LS.get('lcUser', 'dvij-joshi');
   const wrap = document.getElementById('lcWrap');
 
   try {
@@ -1104,13 +1118,22 @@ loadLC();
 ============================================================ */
 async function loadWeather() {
   try {
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.3072&longitude=73.1812&current_weather=true');
+    const city = LS.get('weatherCity', 'Vadodara');
+    // Geocode city name → lat/lon using Open-Meteo geocoding (free, no key)
+    const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+    const geoData = await geo.json();
+    if (!geoData.results || !geoData.results.length) throw new Error('City not found');
+    const { latitude, longitude, name } = geoData.results[0];
+
+    const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
     const data = await res.json();
     document.getElementById('weatherTemp').textContent = `${Math.round(data.current_weather.temperature)}°C`;
-    
+    document.getElementById('weatherCity').textContent = name;
     const codes = {0:'Clear Sky',1:'Mainly Clear',2:'Partly Cloudy',3:'Overcast',45:'Fog',48:'Fog',51:'Drizzle',53:'Drizzle',55:'Drizzle',61:'Rain',63:'Rain',65:'Rain',71:'Snow',73:'Snow',75:'Snow',95:'Thunderstorm'};
     document.getElementById('weatherCond').textContent = codes[data.current_weather.weathercode] || 'Unknown';
-  } catch(e) {}
+  } catch(e) {
+    document.getElementById('weatherCond').textContent = 'Unavailable';
+  }
 }
 loadWeather();
 
@@ -1212,23 +1235,41 @@ document.getElementById('setupSaveBtn').onclick = () => {
 };
 
 document.getElementById('settingsBtn').onclick = () => {
+  document.getElementById('setGhUser').value   = LS.get('ghUser', 'Dvij-Joshi');
+  document.getElementById('setLcUser').value   = LS.get('lcUser', 'dvij-joshi');
+  document.getElementById('setCity').value     = LS.get('weatherCity', 'Vadodara');
   document.getElementById('setLinkedIn').value = LS.get('linkedIn', 'https://linkedin.com/in/dvij-joshi');
   document.getElementById('setPortfolio').value = LS.get('portfolio', 'https://dvij-joshi.vercel.app');
-  document.getElementById('setGroq').value = LS.get('groqKey', '');
+  document.getElementById('setGroq').value     = LS.get('groqKey', '');
   document.getElementById('settingsModal').classList.add('visible');
 };
 document.getElementById('setCloseBtn').onclick = () => document.getElementById('settingsModal').classList.remove('visible');
 document.getElementById('setSaveBtn').onclick = () => {
-  LS.set('linkedIn', document.getElementById('setLinkedIn').value);
+  const ghUser = document.getElementById('setGhUser').value.trim();
+  const lcUser = document.getElementById('setLcUser').value.trim();
+  const city   = document.getElementById('setCity').value.trim();
+  if (ghUser) LS.set('ghUser', ghUser);
+  if (lcUser) LS.set('lcUser', lcUser);
+  if (city)   LS.set('weatherCity', city);
+  LS.set('linkedIn',  document.getElementById('setLinkedIn').value);
   LS.set('portfolio', document.getElementById('setPortfolio').value);
-  LS.set('groqKey', document.getElementById('setGroq').value);
+  LS.set('groqKey',   document.getElementById('setGroq').value);
   document.getElementById('settingsModal').classList.remove('visible');
   applyLinks();
+  // Re-fetch with new usernames / city
+  loadGH();
+  loadLC();
+  loadWeather();
 };
 
 function applyLinks() {
-  document.getElementById('linkedInBtn').href = LS.get('linkedIn', 'https://linkedin.com/in/dvij-joshi');
-  document.getElementById('linkInQa').href = LS.get('linkedIn', 'https://linkedin.com/in/dvij-joshi');
+  const ghUser = LS.get('ghUser', 'Dvij-Joshi');
+  const lcUser = LS.get('lcUser', 'dvij-joshi');
+  // Topbar nav links
+  document.querySelectorAll('.gh-nav-link').forEach(el => el.href = `https://github.com/${ghUser}`);
+  document.querySelectorAll('.lc-nav-link').forEach(el => el.href = `https://leetcode.com/u/${lcUser}/`);
+  document.getElementById('linkedInBtn').href  = LS.get('linkedIn',  'https://linkedin.com/in/dvij-joshi');
+  document.getElementById('linkInQa').href     = LS.get('linkedIn',  'https://linkedin.com/in/dvij-joshi');
   document.getElementById('portfolioBtn').href = LS.get('portfolio', 'https://dvij-joshi.vercel.app');
 }
 applyLinks();
