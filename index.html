@@ -1472,6 +1472,29 @@ function getLevel(count) {
 function renderHeatmap(container, weeks, tooltipEl) {
   container.innerHTML = '';
 
+  // ---- Month labels row ----
+  const monthRow = document.createElement('div');
+  monthRow.className = 'heatmap-months';
+  monthRow.setAttribute('aria-hidden', 'true');
+
+  let lastMonth = -1;
+  weeks.forEach(week => {
+    const firstReal = week.find(d => d !== null);
+    const cellLabel = document.createElement('div');
+    cellLabel.className = 'month-label';
+    cellLabel.style.width = '14px'; // cell 11px + gap 3px
+    if (firstReal) {
+      const m = new Date(firstReal.date).getMonth();
+      if (m !== lastMonth) {
+        cellLabel.textContent = MONTHS_SHORT[m];
+        lastMonth = m;
+      }
+    }
+    monthRow.appendChild(cellLabel);
+  });
+  container.appendChild(monthRow);
+
+  // ---- Cell grid ----
   const grid = document.createElement('div');
   grid.className = 'heatmap-grid';
   grid.setAttribute('role', 'grid');
@@ -1494,7 +1517,7 @@ function renderHeatmap(container, weeks, tooltipEl) {
         cell.setAttribute('data-level', level);
         cell.setAttribute('aria-label', `${day.date}: ${day.count} contribution${day.count !== 1 ? 's' : ''}`);
 
-        cell.addEventListener('mouseenter', e => {
+        cell.addEventListener('mouseenter', () => {
           tooltipEl.style.display = 'block';
           tooltipEl.textContent = `${day.date} · ${day.count}`;
         });
