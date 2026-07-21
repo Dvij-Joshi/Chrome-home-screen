@@ -115,14 +115,28 @@
       font-size: var(--text-base);
       color: var(--color-ink);
       background-color: var(--color-base);
-      /* TEXTURE_BG placeholder — swap in background-image when asset is ready */
-      background-image: var(--img-texture-bg, none);
-      background-size: cover;
-      background-attachment: fixed;
       min-height: 100vh;
       min-width: 1280px;
       transition: background-color 0.2s ease, color 0.2s ease;
+      position: relative;
+      z-index: 0;
     }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      /* TEXTURE_BG placeholder — swap in background-image when asset is ready */
+      /* [IMG: TEXTURE_BG | 1920x1080px | TARGET: body background, behind all content]
+         STATUS: placed — ./assets/TEXTURE_BG.webp */
+      background-image: var(--img-texture-bg, none);
+      background-size: cover;
+      background-position: center;
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: -1;
+    }
+
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -448,7 +462,7 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: var(--color-ink-muted);
+      color: var(--color-ink);
     }
 
     /* DSA Accent Illustration placeholder */
@@ -504,7 +518,7 @@
       font-family: var(--font-mono);
       font-size: var(--text-2xl);
       font-weight: 600;
-      color: var(--color-ink);
+      color: var(--color-accent);
       line-height: 1;
       cursor: text;
       min-width: 2ch;
@@ -1073,7 +1087,7 @@
               role="spinbutton"
               aria-label="Current streak in days"
               title="Click to edit"
-            >0</div>
+            >33</div>
           </div>
           <div class="stat-label">day streak</div>
         </div>
@@ -1087,7 +1101,7 @@
               role="spinbutton"
               aria-label="Problems solved"
               title="Click to edit"
-            >0</div>
+            >29</div>
           </div>
           <div class="stat-label">solved</div>
         </div>
@@ -1415,8 +1429,8 @@ function initDSA() {
   const topicEl  = document.getElementById('currentTopic');
   const focusEl  = document.getElementById('focusNote');
 
-  streakEl.textContent = LS.get('streak', '0');
-  solvedEl.textContent = LS.get('solved', '0');
+  streakEl.textContent = LS.get('streak', '33');
+  solvedEl.textContent = LS.get('solved', '29');
   topicEl.value        = LS.get('topic', 'Linked Lists & HashSets');
   focusEl.value        = LS.get('focus', '');
 
