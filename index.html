@@ -363,11 +363,14 @@
 
     /* Playlists */
     .pl-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
-    .pl-item { display: flex; gap: var(--space-2); align-items: center; }
+    .pl-item { display: flex; gap: var(--space-2); align-items: center; position: relative; }
+    .pl-item:hover .pl-del { opacity: 1; }
     .pl-img { width: 44px; height: 44px; border-radius: 6px; background: var(--color-surface-alt); object-fit: cover; flex-shrink: 0; display: block; }
-    .pl-info { display: flex; flex-direction: column; }
-    .pl-title { font-size: var(--text-sm); color: var(--color-ink); font-weight: 600; }
-    .pl-src { font-size: var(--text-xs); color: var(--color-ink-muted); }
+    .pl-info { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; }
+    .pl-title { font-size: var(--text-sm); color: var(--color-ink); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-src { font-size: var(--text-xs); color: var(--color-ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-del { position: absolute; right: 0; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--color-surface-alt); border-radius: 50%; color: var(--color-ink-muted); cursor: pointer; opacity: 0; transition: all 0.2s; font-size: 14px; }
+    .pl-del:hover { background: var(--color-ink); color: var(--color-base); }
 
     /* ============================================================
        ROW 4
@@ -664,24 +667,7 @@
         <span class="card-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>PLAYLISTS & VIDEOS</span>
         <span class="heatmap-header-right" style="cursor:pointer" onclick="addPlaylist()">+ Add</span>
       </div>
-      <div class="pl-list" id="plList">
-        <a href="https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P" target="_blank" class="pl-item">
-          <img class="pl-img" alt="Lo-Fi Coding Mix" data-yt-url="https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P">
-          <div class="pl-info"><span class="pl-title">Lo-Fi Coding Mix</span><span class="pl-src">YouTube • Playlist</span></div>
-        </a>
-        <a href="https://www.youtube.com/@CodeHelp" target="_blank" class="pl-item">
-          <img class="pl-img" alt="DSA in One Shot" data-yt-url="https://www.youtube.com/@CodeHelp">
-          <div class="pl-info"><span class="pl-title">DSA in One Shot</span><span class="pl-src">CodeHelp • YouTube</span></div>
-        </a>
-        <a href="https://www.youtube.com/@takeUforward" target="_blank" class="pl-item">
-          <img class="pl-img" alt="Striver A2Z DSA Sheet" data-yt-url="https://www.youtube.com/@takeUforward">
-          <div class="pl-info"><span class="pl-title">Striver A2Z DSA Sheet</span><span class="pl-src">takeUforward • YouTube</span></div>
-        </a>
-        <a href="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY" target="_blank" class="pl-item">
-          <img class="pl-img" alt="175-Problem Playlist" data-yt-url="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY">
-          <div class="pl-info"><span class="pl-title">175-Problem Playlist</span><span class="pl-src">Pratyush • YouTube</span></div>
-        </a>
-      </div>
+      <div class="pl-list" id="plList"></div>
       <a href="#" class="link-accent">View All Playlists →</a>
     </div>
   </div>
@@ -1281,7 +1267,69 @@ async function loadPlThumbnails() {
     }
   }));
 }
-loadPlThumbnails();
+
+/* ============================================================
+   PLAYLISTS MANAGER
+============================================================ */
+const defaultPlaylists = [
+  { url: "https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P", title: "Lo-Fi Coding Mix", src: "YouTube • Playlist" },
+  { url: "https://www.youtube.com/@CodeHelp", title: "DSA in One Shot", src: "CodeHelp • YouTube" },
+  { url: "https://www.youtube.com/@takeUforward", title: "Striver A2Z DSA Sheet", src: "takeUforward • YouTube" },
+  { url: "https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY", title: "175-Problem Playlist", src: "Pratyush • YouTube" }
+];
+
+let playlists = LS.getObj('playlists', defaultPlaylists);
+
+function renderPlaylists() {
+  const cont = document.getElementById('plList');
+  cont.innerHTML = '';
+  playlists.forEach((p, i) => {
+    const a = document.createElement('a');
+    a.href = p.url;
+    a.target = '_blank';
+    a.className = 'pl-item';
+    
+    a.innerHTML = `
+      <img class="pl-img" alt="${p.title}" data-yt-url="${p.url}">
+      <div class="pl-info">
+        <span class="pl-title">${p.title}</span>
+        <span class="pl-src">${p.src}</span>
+      </div>
+    `;
+    
+    const del = document.createElement('div');
+    del.className = 'pl-del';
+    del.innerHTML = '×';
+    del.title = 'Remove';
+    del.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      playlists.splice(i, 1);
+      LS.setObj('playlists', playlists);
+      renderPlaylists();
+    };
+    
+    a.appendChild(del);
+    cont.appendChild(a);
+  });
+  
+  // Re-fetch thumbnails for the newly rendered list
+  loadPlThumbnails();
+}
+
+window.addPlaylist = () => {
+  const url = prompt('Enter YouTube URL (playlist or channel):');
+  if (!url) return;
+  const title = prompt('Enter a short title (e.g. "DSA Practice"):', 'New Playlist');
+  if (!title) return;
+  const src = prompt('Enter source string (e.g. "YouTube • Playlist"):', 'YouTube');
+  
+  playlists.push({ url, title, src: src || 'YouTube' });
+  LS.setObj('playlists', playlists);
+  renderPlaylists();
+};
+
+renderPlaylists();
 </script>
 </body>
 </html>
