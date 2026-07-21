@@ -364,7 +364,7 @@
     /* Playlists */
     .pl-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
     .pl-item { display: flex; gap: var(--space-2); align-items: center; }
-    .pl-img { width: 48px; height: 48px; border-radius: 6px; background: var(--color-surface-alt); object-fit: cover; }
+    .pl-img { width: 44px; height: 44px; border-radius: 6px; background: var(--color-surface-alt); object-fit: cover; flex-shrink: 0; display: block; }
     .pl-info { display: flex; flex-direction: column; }
     .pl-title { font-size: var(--text-sm); color: var(--color-ink); font-weight: 600; }
     .pl-src { font-size: var(--text-xs); color: var(--color-ink-muted); }
@@ -665,24 +665,20 @@
         <span class="heatmap-header-right" style="cursor:pointer" onclick="addPlaylist()">+ Add</span>
       </div>
       <div class="pl-list" id="plList">
-        <a href="https://www.youtube.com/results?search_query=lofi+coding+mix" target="_blank" class="pl-item">
-          <!-- [IMG: PLAYLIST_1 | 48x48px | TARGET: thumbnail | PROMPT: Lo-Fi Coding Mix YouTube thumbnail style, dark background, headphones silhouette, purple-pink ambient glow, minimal flat illustration, no text | MODEL: flux-dev ] -->
-          <img src="./assets/PLAYLIST_1.webp" class="pl-img" alt="" onerror="this.style.display='none'">
+        <a href="https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P" target="_blank" class="pl-item">
+          <img class="pl-img" alt="Lo-Fi Coding Mix" data-yt-url="https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P">
           <div class="pl-info"><span class="pl-title">Lo-Fi Coding Mix</span><span class="pl-src">YouTube • Playlist</span></div>
         </a>
-        <a href="https://www.youtube.com/c/CodeHelp" target="_blank" class="pl-item">
-          <!-- [IMG: PLAYLIST_2 | 48x48px | TARGET: thumbnail | PROMPT: DSA coding tutorial thumbnail, dark background, binary tree or array graphic, orange-red accent, flat bold illustration, no text | MODEL: flux-dev ] -->
-          <img src="./assets/PLAYLIST_2.webp" class="pl-img" alt="" onerror="this.style.display='none'">
+        <a href="https://www.youtube.com/@CodeHelp" target="_blank" class="pl-item">
+          <img class="pl-img" alt="DSA in One Shot" data-yt-url="https://www.youtube.com/@CodeHelp">
           <div class="pl-info"><span class="pl-title">DSA in One Shot</span><span class="pl-src">CodeHelp • YouTube</span></div>
         </a>
-        <a href="https://www.youtube.com/c/takeUforward" target="_blank" class="pl-item">
-          <!-- [IMG: PLAYLIST_3 | 48x48px | TARGET: thumbnail | PROMPT: DSA sheet thumbnail, dark background, grid/table motif, blue-green accent, clean geometric flat illustration, no text | MODEL: flux-dev ] -->
-          <img src="./assets/PLAYLIST_3.webp" class="pl-img" alt="" onerror="this.style.display='none'">
+        <a href="https://www.youtube.com/@takeUforward" target="_blank" class="pl-item">
+          <img class="pl-img" alt="Striver A2Z DSA Sheet" data-yt-url="https://www.youtube.com/@takeUforward">
           <div class="pl-info"><span class="pl-title">Striver A2Z DSA Sheet</span><span class="pl-src">takeUforward • YouTube</span></div>
         </a>
         <a href="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY" target="_blank" class="pl-item">
-          <!-- [IMG: PLAYLIST_4 | 48x48px | TARGET: thumbnail | PROMPT: YouTube educational playlist thumbnail, warm orange tones, abstract shapes suggesting a numbered list or roadmap, flat illustration, no text | MODEL: flux-dev ] -->
-          <img src="./assets/PLAYLIST_4.webp" class="pl-img" alt="" onerror="this.style.display='none'">
+          <img class="pl-img" alt="175-Problem Playlist" data-yt-url="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY">
           <div class="pl-info"><span class="pl-title">175-Problem Playlist</span><span class="pl-src">Pratyush • YouTube</span></div>
         </a>
       </div>
@@ -1255,6 +1251,37 @@ document.addEventListener('keydown', e => {
     if (e.key === 'a') { e.preventDefault(); document.getElementById('searchInput').focus(); document.getElementById('searchInput').value = '? '; }
   }
 });
+
+/* ============================================================
+   YOUTUBE PLAYLIST THUMBNAILS (oEmbed — no API key needed)
+   YouTube exposes https://www.youtube.com/oembed?url=...&format=json
+   with full CORS support. Each playlist img has data-yt-url set.
+   On failure we show a styled red YT fallback div.
+============================================================ */
+async function loadPlThumbnails() {
+  const imgs = document.querySelectorAll('.pl-img[data-yt-url]');
+  await Promise.all(Array.from(imgs).map(async img => {
+    const url = img.dataset.ytUrl;
+    const oEmbedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+    try {
+      const res = await fetch(oEmbedUrl);
+      if (!res.ok) throw new Error(`oEmbed HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.thumbnail_url) {
+        img.src = data.thumbnail_url;
+        img.style.background = 'none';
+      } else throw new Error('No thumbnail');
+    } catch (e) {
+      // Graceful fallback: YouTube-red square with play icon
+      img.style.display = 'none';
+      const fallback = document.createElement('div');
+      fallback.style.cssText = 'width:44px;height:44px;border-radius:6px;background:#FF0000;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      fallback.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+      img.parentNode.insertBefore(fallback, img);
+    }
+  }));
+}
+loadPlThumbnails();
 </script>
 </body>
 </html>
