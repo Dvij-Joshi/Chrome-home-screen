@@ -435,7 +435,7 @@
       display: grid;
       grid-template-columns: 38fr 58fr;
       gap: var(--space-4);
-      align-items: start;
+      align-items: stretch;
     }
 
     /* ============================================================
@@ -448,6 +448,8 @@
       padding: var(--space-4);
       position: relative;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .dsa-tracker-header {
@@ -554,40 +556,110 @@
 
     .stat-card:hover .edit-hint { opacity: 1; }
 
-    /* Topic field */
-    .dsa-field {
-      margin-bottom: var(--space-2);
+    .dsa-difficulty-row {
+      display: flex;
+      gap: var(--space-3);
+      margin-top: auto;
+      padding-top: var(--space-2);
     }
-
-    .field-label {
-      font-size: var(--text-xs);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+    .dsa-diff-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .dsa-diff-label {
+      font-size: 10px;
       color: var(--color-ink-muted);
-      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
-
-    .field-input {
-      width: 100%;
-      background: var(--color-base);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      padding: 8px 10px;
+    .dsa-diff-val {
+      font-family: var(--font-mono);
       font-size: var(--text-sm);
       color: var(--color-ink);
-      outline: none;
-      transition: border-color 0.15s ease;
+      font-weight: 500;
     }
 
-    .field-input:focus {
+    /* ============================================================
+       RESOURCES SECTION
+    ============================================================ */
+    .resources-section {
+      display: flex;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+      width: 100%;
+    }
+    .resource-pill {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 99px;
+      padding: 10px 16px;
+      font-size: var(--text-sm);
+      color: var(--color-accent);
+      font-weight: 500;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+    }
+    .resource-pill:hover, .resource-pill:focus-within {
       border-color: var(--color-accent);
+      background: var(--color-base);
+    }
+    .resource-input {
+      background: transparent;
+      border: none;
+      color: var(--color-accent);
+      font-family: inherit;
+      font-size: inherit;
+      font-weight: inherit;
+      width: 100%;
+      text-align: center;
+      outline: none;
+    }
+    .resource-input::placeholder {
+      color: var(--color-ink-muted);
+      opacity: 0.6;
+    }
+    .resource-label-tag {
+      position: absolute;
+      top: -8px;
+      background: var(--color-base);
+      padding: 0 6px;
+      font-size: 9px;
+      color: var(--color-ink-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
-    .field-textarea {
-      resize: none;
-      height: 80px;
-      line-height: 1.55;
+    /* ============================================================
+       VERTICAL MARGIN TEXT
+    ============================================================ */
+    .margin-vertical-text {
+      position: fixed;
+      top: 50%;
+      transform: translateY(-50%);
+      writing-mode: vertical-rl;
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+      color: var(--color-ink-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .margin-left {
+      left: var(--space-4);
+      transform: translateY(-50%) rotate(180deg);
+    }
+    .margin-right {
+      right: var(--space-4);
     }
 
     .dsa-link {
@@ -741,6 +813,12 @@
       border: 1px solid var(--color-border);
       border-radius: var(--radius-lg);
       padding: var(--space-4);
+      margin-top: var(--space-4);
+    }
+    
+    .lc-section .heatmap-grid, .lc-section .heatmap-months {
+      width: 100%;
+      justify-content: space-between;
     }
 
     .lc-grid-wrap {
@@ -910,6 +988,10 @@
 </head>
 <body>
 
+<!-- Vertical Margin Text -->
+<div class="margin-vertical-text margin-left" id="marginDateText"></div>
+<div class="margin-vertical-text margin-right" id="marginGHTotalText"></div>
+
 <!-- Tooltip for heatmaps -->
 <div class="hm-tooltip" id="hmTooltip"></div>
 
@@ -1052,27 +1134,6 @@
     <div class="dsa-tracker">
       <div class="dsa-tracker-header">
         <span class="section-label">DSA Tracker</span>
-        <!-- DSA Accent SVG Illustration (inline, based on DSA_ACCENT spec) -->
-        <!-- [IMG: DSA_ACCENT | 120x120px | TARGET: top-right of DSA tracker section]
-             PROMPT: Minimal abstract geometric mark, single node-and-edge graph element rendered as flat 2D
-             illustration on transparent background — a solid circle node center with two line edges extending
-             outward at angles to smaller nodes. Pure flat color #C95F3A, no gradients, no shadows, no fills
-             on edges — just clean strokes and solid circles. Stroke weight 2px. Centered composition with
-             generous padding. Art style: flat SVG editorial illustration. Mood: precise, technical, warm.
-             NEGATIVE: gradients, shadows, 3D rendering, photorealism, text, multiple colors.
-             MODEL: flux-dev
-             STATUS: pending -->
-        <!-- [IMG: DSA_ACCENT | 120x120px | STATUS: placed — ./assets/DSA_ACCENT.webp] -->
-        <div class="dsa-accent-placeholder" aria-hidden="true">
-          <img
-            src="./assets/DSA_ACCENT.webp"
-            width="80"
-            height="80"
-            alt=""
-            aria-hidden="true"
-            style="object-fit: contain; display: block;"
-          />
-        </div>
       </div>
 
       <!-- Stats Row -->
@@ -1107,43 +1168,21 @@
         </div>
       </div>
 
-      <!-- Current Topic -->
-      <div class="dsa-field">
-        <div class="field-label">Current Topic</div>
-        <input
-          class="field-input"
-          type="text"
-          id="currentTopic"
-          value="Linked Lists &amp; HashSets"
-          placeholder="e.g. Dynamic Programming"
-          aria-label="Current DSA topic"
-        />
+      <!-- Difficulty Breakdown -->
+      <div class="dsa-difficulty-row">
+        <div class="dsa-diff-item">
+          <span class="dsa-diff-label">Easy</span>
+          <span class="dsa-diff-val" id="easyVal">18</span>
+        </div>
+        <div class="dsa-diff-item">
+          <span class="dsa-diff-label">Med</span>
+          <span class="dsa-diff-val" id="medVal">10</span>
+        </div>
+        <div class="dsa-diff-item">
+          <span class="dsa-diff-label">Hard</span>
+          <span class="dsa-diff-val" id="hardVal">1</span>
+        </div>
       </div>
-
-      <!-- Today's Focus -->
-      <div class="dsa-field">
-        <div class="field-label">Today's Focus</div>
-        <textarea
-          class="field-input field-textarea"
-          id="focusNote"
-          placeholder="What are you working on today?"
-          aria-label="Today's focus note"
-        ></textarea>
-      </div>
-
-      <!-- Playlist Link -->
-      <a
-        class="dsa-link"
-        href="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY"
-        target="_blank"
-        rel="noopener"
-        aria-label="Open Pratyush's 175-problem LeetCode playlist on YouTube"
-      >
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path d="M2 7h10M7 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        175-problem playlist
-      </a>
     </div>
 
     <!-- GITHUB HEATMAP -->
@@ -1176,6 +1215,21 @@
     </div>
 
   </div><!-- end mid-section -->
+
+  <!-- RESOURCES SECTION -->
+  <div class="resources-section">
+    <a href="https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY" target="_blank" rel="noopener" class="resource-pill">
+      175-Problem DSA Playlist by Pratyush
+    </a>
+    <div class="resource-pill">
+      <span class="resource-label-tag">Currently Watching</span>
+      <input type="text" class="resource-input" id="resWatching" placeholder="Paste link or text here..." />
+    </div>
+    <div class="resource-pill">
+      <span class="resource-label-tag">Reference</span>
+      <input type="text" class="resource-input" id="resReference" placeholder="Paste link or text here..." />
+    </div>
+  </div>
 
   <!-- LEETCODE HEATMAP — FULL WIDTH -->
   <div class="lc-section">
@@ -1277,6 +1331,9 @@ function updateGreeting() {
   const dateNum = now.getDate();
   const year = now.getFullYear();
   document.getElementById('greetingDate').textContent = `${dayName}, ${monthName} ${dateNum}, ${year}`;
+
+  const marginOpts = { day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('marginDateText').textContent = now.toLocaleDateString('en-GB', marginOpts);
 }
 updateGreeting();
 
@@ -1426,13 +1483,13 @@ document.addEventListener('click', e => {
 function initDSA() {
   const streakEl = document.getElementById('streakVal');
   const solvedEl = document.getElementById('solvedVal');
-  const topicEl  = document.getElementById('currentTopic');
-  const focusEl  = document.getElementById('focusNote');
+  const resWatching = document.getElementById('resWatching');
+  const resReference = document.getElementById('resReference');
 
   streakEl.textContent = LS.get('streak', '33');
   solvedEl.textContent = LS.get('solved', '29');
-  topicEl.value        = LS.get('topic', 'Linked Lists & HashSets');
-  focusEl.value        = LS.get('focus', '');
+  resWatching.value = LS.get('resWatching', '');
+  resReference.value = LS.get('resReference', '');
 
   function saveOnEdit(el, key) {
     el.addEventListener('input', () => {
@@ -1455,8 +1512,8 @@ function initDSA() {
   saveOnEdit(streakEl, 'streak');
   saveOnEdit(solvedEl, 'solved');
 
-  topicEl.addEventListener('input', () => LS.set('topic', topicEl.value));
-  focusEl.addEventListener('input', () => LS.set('focus', focusEl.value));
+  resWatching.addEventListener('input', () => LS.set('resWatching', resWatching.value));
+  resReference.addEventListener('input', () => LS.set('resReference', resReference.value));
 }
 initDSA();
 
@@ -1615,6 +1672,7 @@ async function loadGitHub() {
     document.getElementById('ghStreak').textContent = curStreak;
     document.getElementById('ghLongest').textContent = longestStreak;
     document.getElementById('ghYear').textContent = new Date().getFullYear();
+    document.getElementById('marginGHTotalText').textContent = total.toLocaleString() + ' CONTRIBUTIONS';
 
     const weeks = buildWeeks(contributions);
     const tooltip = document.getElementById('hmTooltip');
@@ -1647,8 +1705,13 @@ async function parseLCCalendar(rawCalStr, totalActiveDays, streak, username, sol
     LS.set('streak', streak);
   }
   if (solved !== undefined && solved !== null) {
-    document.getElementById('solvedVal').textContent = solved;
-    LS.set('solved', solved);
+    if (solved.all !== undefined) {
+      document.getElementById('solvedVal').textContent = solved.all;
+      LS.set('solved', solved.all);
+    }
+    if (solved.easy !== undefined) document.getElementById('easyVal').textContent = solved.easy;
+    if (solved.medium !== undefined) document.getElementById('medVal').textContent = solved.medium;
+    if (solved.hard !== undefined) document.getElementById('hardVal').textContent = solved.hard;
   }
 
   const rawCal = JSON.parse(rawCalStr || '{}');
@@ -1696,7 +1759,7 @@ async function loadLeetCode() {
     let solvedCount = null;
     if (resSolved && resSolved.ok) {
       const solvedData = await resSolved.json();
-      solvedCount = solvedData.solvedProblem;
+      solvedCount = { all: solvedData.solvedProblem, easy: solvedData.easySolved, medium: solvedData.mediumSolved, hard: solvedData.hardSolved };
     }
 
     // Returns { submissionCalendar, totalActiveDays, streak }
@@ -1729,12 +1792,20 @@ async function loadLeetCode() {
     });
     if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
     const data = await res.json();
-    const cal = data?.data?.matchedUser?.userCalendar;
-    if (!cal?.submissionCalendar) throw new Error('No calendar in proxy response');
     
     const stats = data?.data?.matchedUser?.submitStatsGlobal?.acSubmissionNum;
-    const solvedCount = stats?.find(x => x.difficulty === 'All')?.count;
+    let solvedCount = null;
+    if (stats) {
+      solvedCount = {
+        all: stats.find(x => x.difficulty === 'All')?.count,
+        easy: stats.find(x => x.difficulty === 'Easy')?.count,
+        medium: stats.find(x => x.difficulty === 'Medium')?.count,
+        hard: stats.find(x => x.difficulty === 'Hard')?.count
+      };
+    }
 
+    const cal = data?.data?.matchedUser?.userCalendar;
+    if (!cal) throw new Error('No calendar found in GraphQL response');
     await parseLCCalendar(cal.submissionCalendar, cal.totalActiveDays, cal.streak, username, solvedCount);
     return; // ✅ success
   } catch (e) {
