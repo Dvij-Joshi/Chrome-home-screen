@@ -307,46 +307,45 @@ async function loadLC() {
   const USER = LS.get('lcUser', '');
   if (!USER) return;
   const wrap = document.getElementById('lcWrap');
-  // Show skeleton while API wakes up (Render free tier cold-start)
   wrap.innerHTML = '<div class="skeleton-heatmap"></div>';
 
+  // --- Show cached values immediately so nothing stays blank ---
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val && val !== 'null') el.textContent = val; };
+  setEl('dsaSolved',   LS.get('solved',  '--'));
+  setEl('dsaEasy',     LS.get('easy',    '--'));
+  setEl('dsaMed',      LS.get('medium',  '--'));
+  setEl('dsaHard',     LS.get('hard',    '--'));
+  setEl('dsaStreak',   LS.get('streak',  '--'));
+  setEl('lcCurStreak', LS.get('streak',  '--'));
+
+  // Profile link
+  const lcPl = document.getElementById('lcProfileLink');
+  if (lcPl) lcPl.href = `https://leetcode.com/u/${USER}/`;
+
   try {
-    // Fire all three requests in parallel
+    // Fire all three requests in parallel; each can fail independently
     const [rProfile, rSolved, rCal] = await Promise.all([
       fetch(`${BASE}/${USER}`).catch(() => null),
       fetch(`${BASE}/${USER}/solved`).catch(() => null),
       fetch(`${BASE}/${USER}/calendar`).catch(() => null)
     ]);
 
-    if (rProfile && rProfile.ok) {
-      const p = await rProfile.json();
-      const active = p.totalActiveDays ?? null;
-      if (active !== null) {
-        const lcTv = document.getElementById('lcTotalVal'); if (lcTv) lcTv.textContent = active;
-        const lcAd = document.getElementById('lcActiveDays'); if (lcAd) lcAd.textContent = active;
-      }
-    }
-
     // --- Solved: difficulty breakdown & total ---
     if (rSolved && rSolved.ok) {
       const s = await rSolved.json();
-      const total  = s.solvedProblem  ?? s.totalSolved  ?? null;
-      const easy   = s.easySolved     ?? null;
-      const medium = s.mediumSolved   ?? null;
-      const hard   = s.hardSolved     ?? null;
-      if (total  !== null) {
-        document.getElementById('dsaSolved').textContent = total;
-        LS.set('solved', String(total));
-      }
-      if (easy   !== null) { document.getElementById('dsaEasy').textContent = easy;   LS.set('easy',   String(easy));   }
-      if (medium !== null) { document.getElementById('dsaMed').textContent  = medium; LS.set('medium', String(medium)); }
-      if (hard   !== null) { document.getElementById('dsaHard').textContent = hard;   LS.set('hard',   String(hard));   }
+      const total  = s.solvedProblem ?? s.totalSolved ?? null;
+      const easy   = s.easySolved   ?? null;
+      const medium = s.mediumSolved ?? null;
+      const hard   = s.hardSolved   ?? null;
+      if (total  !== null) { setEl('dsaSolved', total);  LS.set('solved',  String(total));  }
+      if (easy   !== null) { setEl('dsaEasy',   easy);   LS.set('easy',    String(easy));   }
+      if (medium !== null) { setEl('dsaMed',    medium); LS.set('medium',  String(medium)); }
+      if (hard   !== null) { setEl('dsaHard',   hard);   LS.set('hard',    String(hard));   }
     }
 
-    // --- Calendar: heatmap ---
+    // --- Calendar: heatmap + streak + active days (most reliable endpoint) ---
     if (rCal && rCal.ok) {
       const c = await rCal.json();
-      // API returns { submissionCalendar: "{ts:count,...}" } or the object directly
       let rawCal = c.submissionCalendar ?? c;
       if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
 
@@ -357,7 +356,6 @@ async function loadLC() {
 
       const days = [];
       const today = new Date();
-      // Match GitHub's format: rolling last 365 days
       for (let i = 364; i >= 0; i--) {
         const d = new Date();
         d.setDate(today.getDate() - i);
@@ -366,28 +364,34 @@ async function loadLC() {
       }
       renderMap(wrap, days);
 
-      // Compute streak from calendar (API doesn't reliably return streak field)
+      // Current streak (allow today to be 0)
       const todayStr = new Date().toISOString().slice(0, 10);
       let lcStreak = 0;
       for (let i = days.length - 1; i >= 0; i--) {
-        // Allow today to have 0 (still in progress), but stop at first empty day before today
         if (days[i].count > 0) { lcStreak++; }
         else if (days[i].date < todayStr) { break; }
       }
-      document.getElementById('lcCurStreak').textContent = lcStreak;
-      document.getElementById('dsaStreak').textContent = lcStreak;
+      setEl('lcCurStreak', lcStreak); setEl('dsaStreak', lcStreak);
       LS.set('streak', String(lcStreak));
 
-      // Max streak from calendar
+      // Max streak
       let lMax = 0, lTemp = 0;
       days.forEach(d => { if (d.count > 0) { lTemp++; if (lTemp > lMax) lMax = lTemp; } else lTemp = 0; });
-      const lcMs = document.getElementById('lcMaxStreak'); if (lcMs) lcMs.textContent = lMax;
+      setEl('lcMaxStreak', lMax); LS.set('lcMaxStreak', String(lMax));
 
-      // LC profile link
-      const lcPl = document.getElementById('lcProfileLink');
-      if (lcPl) lcPl.href = `https://leetcode.com/u/${USER}/`;
-    } else {
-      throw new Error('Calendar fetch failed');
+      // Active days computed from calendar (reliable — no profile endpoint needed)
+      const activeDays = days.filter(d => d.count > 0).length;
+      setEl('lcTotalVal',  activeDays); setEl('lcActiveDays', activeDays);
+      LS.set('lcActiveDays', String(activeDays));
+
+    } else if (!rCal || !rCal.ok) {
+      // Calendar failed — restore cached streak at least
+      setEl('lcCurStreak', LS.get('streak', '--'));
+      setEl('dsaStreak',   LS.get('streak', '--'));
+      setEl('lcMaxStreak', LS.get('lcMaxStreak', '--'));
+      setEl('lcActiveDays', LS.get('lcActiveDays', '--'));
+      setEl('lcTotalVal',   LS.get('lcActiveDays', '--'));
+      wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
     }
 
   } catch(e) {
