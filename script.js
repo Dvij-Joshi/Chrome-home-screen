@@ -676,10 +676,10 @@ Make strengths visually varied and plausible based on a typical learner.`;
   // AI Coach card removed — coach fields no longer in DOM
 
   const ins = LS.getObj('aiInsights', {body: 'Complete setup to view insights.', tag1: '--', tag2: '--', rec: '--'});
-  if (ins.body) document.getElementById('insBody').textContent = ins.body;
-  if (ins.tag1) document.getElementById('insT1').textContent = ins.tag1;
-  if (ins.tag2) document.getElementById('insT2').textContent = ins.tag2;
-  if (ins.rec) document.getElementById('insRec').textContent = ins.rec;
+  const bEl = document.getElementById('insBody'); if (ins.body && bEl) bEl.textContent = ins.body;
+  const t1El = document.getElementById('insT1'); if (ins.tag1 && t1El) t1El.textContent = ins.tag1;
+  const t2El = document.getElementById('insT2'); if (ins.tag2 && t2El) t2El.textContent = ins.tag2;
+  const rEl = document.getElementById('insRec'); if (ins.rec && rEl) rEl.textContent = ins.rec;
 
   const str = LS.getObj('aiStrengths', []);
   if (str.length === 5) {
