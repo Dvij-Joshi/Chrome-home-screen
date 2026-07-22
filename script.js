@@ -230,6 +230,9 @@ async function loadGH() {
     document.getElementById('ghTotalVal').textContent = total.toLocaleString();
     document.getElementById('ghCurStreak').textContent = curS;
     document.getElementById('ghMaxStreak').textContent = maxS;
+    const pTot = document.getElementById('ghProfTotal'); if (pTot) pTot.textContent = total.toLocaleString();
+    const pCur = document.getElementById('ghProfCur'); if (pCur) pCur.textContent = curS;
+    const pMax = document.getElementById('ghProfMax'); if (pMax) pMax.textContent = maxS;
     document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
     renderMap(document.getElementById('ghWrap'), sorted);
 
@@ -374,11 +377,15 @@ async function loadLC() {
   if (lcPl) lcPl.href = `https://leetcode.com/u/${USER}/`;
 
   try {
+    const cachedTime = parseInt(LS.get('lcCalTime', '0'));
+    const cachedCal = LS.getObj('lcRawCal', null);
+    const useCache = cachedCal && (Date.now() - cachedTime < 3600000); // 1 hour cache
+
     // Fire all three requests in parallel; each can fail independently
     const [rProfile, rSolved, rCal] = await Promise.all([
       fetch(`${BASE}/${USER}`).catch(() => null),
       fetch(`${BASE}/${USER}/solved`).catch(() => null),
-      fetch(`${BASE}/${USER}/calendar`).catch(() => null)
+      useCache ? Promise.resolve({ ok: true, cached: true }) : fetch(`${BASE}/${USER}/calendar`).catch(() => null)
     ]);
 
     // --- Solved: difficulty breakdown & total ---
@@ -396,9 +403,16 @@ async function loadLC() {
 
     // --- Calendar: heatmap + streak + active days (most reliable endpoint) ---
     if (rCal && rCal.ok) {
-      const c = await rCal.json();
-      let rawCal = c.submissionCalendar ?? c;
-      if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
+      let rawCal;
+      if (rCal.cached) {
+        rawCal = cachedCal;
+      } else {
+        const c = await rCal.json();
+        rawCal = c.submissionCalendar ?? c;
+        if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
+        LS.setObj('lcRawCal', rawCal);
+        LS.set('lcCalTime', Date.now().toString());
+      }
 
       const lcMap = {};
       Object.keys(rawCal).forEach(ts => {
@@ -434,7 +448,6 @@ async function loadLC() {
       const activeDays = days.filter(d => d.count > 0).length;
       setEl('lcTotalVal',  activeDays); setEl('lcActiveDays', activeDays);
       LS.set('lcActiveDays', String(activeDays));
-      LS.setObj('lcDaysCache', days);
 
     } else if (!rCal || !rCal.ok) {
       // Calendar failed — restore cached streak at least
@@ -443,19 +456,11 @@ async function loadLC() {
       setEl('lcMaxStreak', LS.get('lcMaxStreak', '--'));
       setEl('lcActiveDays', LS.get('lcActiveDays', '--'));
       setEl('lcTotalVal',   LS.get('lcActiveDays', '--'));
-      
-      const cachedDays = LS.getObj('lcDaysCache', null);
-      if (cachedDays) {
-        renderMap(wrap, cachedDays);
-      } else {
-        wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
-      }
+      wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
     }
 
   } catch(e) {
-    const cachedDays = LS.getObj('lcDaysCache', null);
-    if (cachedDays) renderMap(wrap, cachedDays);
-    else wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
+    wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
   }
 }
 loadLC();

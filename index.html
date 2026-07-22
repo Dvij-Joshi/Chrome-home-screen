@@ -571,15 +571,15 @@
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
         <div style="text-align:center;padding:8px 4px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06))">
-          <div class="gh-val" id="ghTotalVal" style="font-size:16px">--</div>
+          <div class="gh-val" id="ghProfTotal" style="font-size:16px">--</div>
           <div style="font-size:9px;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">contributions</div>
         </div>
         <div style="text-align:center;padding:8px 4px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06))">
-          <div class="gh-val" id="ghCurStreak" style="font-size:16px">--</div>
+          <div class="gh-val" id="ghProfCur" style="font-size:16px">--</div>
           <div style="font-size:9px;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">cur streak</div>
         </div>
         <div style="text-align:center;padding:8px 4px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06))">
-          <div class="gh-val" id="ghMaxStreak" style="font-size:16px">--</div>
+          <div class="gh-val" id="ghProfMax" style="font-size:16px">--</div>
           <div style="font-size:9px;color:var(--color-ink-muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">longest</div>
         </div>
       </div>
@@ -590,6 +590,11 @@
       <div class="card-header">
         <span class="card-title">GitHub Activity</span>
         <span class="heatmap-header-right" id="ghYear">2026</span>
+      </div>
+      <div class="gh-stats">
+        <div class="gh-stat"><span class="gh-val" id="ghTotalVal">--</span><span class="gh-lbl">contributions</span></div>
+        <div class="gh-stat"><span class="gh-val" id="ghCurStreak">--</span><span class="gh-lbl">current streak</span></div>
+        <div class="gh-stat"><span class="gh-val" id="ghMaxStreak">--</span><span class="gh-lbl">longest streak</span></div>
       </div>
       <div class="heatmap-wrapper" id="ghWrap"></div>
     </div>
