@@ -434,6 +434,7 @@ async function loadLC() {
       const activeDays = days.filter(d => d.count > 0).length;
       setEl('lcTotalVal',  activeDays); setEl('lcActiveDays', activeDays);
       LS.set('lcActiveDays', String(activeDays));
+      LS.setObj('lcDaysCache', days);
 
     } else if (!rCal || !rCal.ok) {
       // Calendar failed — restore cached streak at least
@@ -442,11 +443,19 @@ async function loadLC() {
       setEl('lcMaxStreak', LS.get('lcMaxStreak', '--'));
       setEl('lcActiveDays', LS.get('lcActiveDays', '--'));
       setEl('lcTotalVal',   LS.get('lcActiveDays', '--'));
-      wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
+      
+      const cachedDays = LS.getObj('lcDaysCache', null);
+      if (cachedDays) {
+        renderMap(wrap, cachedDays);
+      } else {
+        wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
+      }
     }
 
   } catch(e) {
-    wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
+    const cachedDays = LS.getObj('lcDaysCache', null);
+    if (cachedDays) renderMap(wrap, cachedDays);
+    else wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
   }
 }
 loadLC();
