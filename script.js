@@ -216,9 +216,6 @@ function renderMap(cont, days) {
 async function loadGH() {
   const ghUser = LS.get('ghUser', '');
   if (!ghUser) return;
-  // Show skeleton while loading
-  const ghWrap = document.getElementById('ghWrap');
-  ghWrap.innerHTML = '<div class="skeleton-heatmap"></div>';
   try {
     const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${ghUser}?y=last`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -236,19 +233,16 @@ async function loadGH() {
       else tempS = 0;
     });
 
-    // Walk back from today to compute current streak
-    // (ignore today if it has no contributions yet — it's still in progress)
     const past = sorted.filter(d => d.date <= todayStr);
     for (let i = past.length - 1; i >= 0; i--) {
       if (past[i].count > 0) curS++;
-      else { if (i < past.length - 1) break; } // allow today to be 0
+      else { if (i < past.length - 1) break; }
     }
 
-    document.getElementById('ghTotalVal').textContent = total.toLocaleString();
-    document.getElementById('ghCurStreak').textContent = curS;
-    document.getElementById('ghMaxStreak').textContent = maxS;
-    document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
-    renderMap(document.getElementById('ghWrap'), sorted);
+    const ghTv = document.getElementById('ghTotalVal'); if (ghTv) ghTv.textContent = total.toLocaleString();
+    const ghCs = document.getElementById('ghCurStreak'); if (ghCs) ghCs.textContent = curS;
+    const ghMs = document.getElementById('ghMaxStreak'); if (ghMs) ghMs.textContent = maxS;
+    const mr = document.getElementById('mRight'); if (mr) mr.textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
 
     // GitHub Profile card
     const profileUrl = `https://github.com/${ghUser}`;
@@ -258,10 +252,63 @@ async function loadGH() {
     const un = document.getElementById('ghUsername'); if (un) un.textContent = `@${ghUser}`;
     const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = `${total.toLocaleString()} contributions · ${curS} day streak`;
   } catch(e) {
-    document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>';
+    const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = 'Failed to load GitHub activity.';
   }
 }
 loadGH();
+
+/* ============================================================
+   HACKER NEWS FEED
+============================================================ */
+async function loadHN() {
+  const feed = document.getElementById('hnFeed');
+  if (!feed) return;
+  try {
+    const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+    if (!res.ok) throw new Error();
+    const ids = await res.json();
+    const topIds = ids.slice(0, 5); // get top 5
+
+    const stories = await Promise.all(topIds.map(async id => {
+      const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
+      return await itemRes.json();
+    }));
+
+    feed.innerHTML = '';
+    stories.forEach(story => {
+      const a = document.createElement('a');
+      a.href = story.url || `https://news.ycombinator.com/item?id=${story.id}`;
+      a.target = '_blank';
+      a.className = 'link-hover';
+      a.style.display = 'block';
+      a.style.textDecoration = 'none';
+
+      const title = document.createElement('div');
+      title.style.fontSize = '12px';
+      title.style.color = 'var(--color-ink)';
+      title.style.fontWeight = '500';
+      title.style.whiteSpace = 'nowrap';
+      title.style.overflow = 'hidden';
+      title.style.textOverflow = 'ellipsis';
+      title.style.marginBottom = '2px';
+      title.textContent = story.title;
+
+      const meta = document.createElement('div');
+      meta.style.fontSize = '10px';
+      meta.style.color = 'var(--color-ink-muted)';
+      const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : 'news.ycombinator.com';
+      meta.textContent = `${story.score} pts · ${domain}`;
+
+      a.appendChild(title);
+      a.appendChild(meta);
+      feed.appendChild(a);
+    });
+
+  } catch (e) {
+    feed.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load feed.</span>';
+  }
+}
+loadHN();
 
 async function loadRecentActivity() {
   const user = LS.get('ghUser', '');

@@ -584,17 +584,14 @@
       <a id="ghRepoLink" href="#" target="_blank" class="link-accent">View Contributions →</a>
     </div>
 
-    <div class="card">
+    <div class="card" id="hnCard">
       <div class="card-header">
-        <span class="card-title">GitHub Activity</span>
-        <span class="heatmap-header-right" id="ghYear">2026</span>
+        <span class="card-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>TECH NEWS</span>
+        <a href="https://news.ycombinator.com/" target="_blank" class="link-accent" style="font-size:10px">Hacker News →</a>
       </div>
-      <div class="gh-stats">
-        <div class="gh-stat"><span class="gh-val" id="ghTotalVal">--</span><span class="gh-lbl">contributions</span></div>
-        <div class="gh-stat"><span class="gh-val" id="ghCurStreak">--</span><span class="gh-lbl">current streak</span></div>
-        <div class="gh-stat"><span class="gh-val" id="ghMaxStreak">--</span><span class="gh-lbl">longest streak</span></div>
+      <div id="hnFeed" style="display:flex;flex-direction:column;gap:12px;margin-top:8px">
+        <div style="color:var(--color-ink-muted);font-size:12px">Loading top stories...</div>
       </div>
-      <div class="heatmap-wrapper" id="ghWrap"></div>
     </div>
 
     <div class="card" id="milestoneCard">
