@@ -34,6 +34,8 @@ function updateClock() {
   else if (hr >= 21 || hr < 5) gr = 'Still up';
   const name = LS.get('firstName', 'Developer');
   document.getElementById('greetText').textContent = `${gr}, ${name}`;
+  const avatar = document.getElementById('navAvatar');
+  if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
   
   const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
   document.getElementById('greetDate').textContent = d.toLocaleDateString('en-US', opts);
@@ -595,6 +597,8 @@ document.getElementById('setSaveBtn').onclick = () => {
   else if (hr >= 21 || hr < 5) gr = 'Still up';
   const gt = document.getElementById('greetText');
   if (gt) gt.textContent = `${gr}, ${name}`;
+  const avatar = document.getElementById('navAvatar');
+  if (avatar) avatar.textContent = name.charAt(0).toUpperCase();
 
   // Re-fetch all data
   loadGH();
