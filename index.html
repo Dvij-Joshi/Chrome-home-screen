@@ -306,12 +306,19 @@
       border-radius: 8px;
       padding: var(--space-4);
       display: none;
-      z-index: 100;
+      z-index: 1000;
       max-height: 400px;
       overflow-y: auto;
+      overscroll-behavior: contain;
       font-size: var(--text-sm);
+      line-height: 1.5;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
     }
     .search-dropdown.visible { display: block; }
+    .search-dropdown p { margin-bottom: var(--space-2); }
+    .search-dropdown ul, .search-dropdown ol { padding-left: var(--space-4); margin-bottom: var(--space-2); }
+    .search-dropdown li { margin-bottom: 4px; }
+    .search-dropdown strong { color: var(--color-ink); font-weight: 600; }
 
     .nav-right {
       display: flex;

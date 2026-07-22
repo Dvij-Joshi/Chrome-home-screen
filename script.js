@@ -261,6 +261,37 @@ async function loadGH() {
 }
 loadGH();
 
+async function loadRecentActivity() {
+  const user = LS.get('ghUser', 'Dvij-Joshi');
+  try {
+    const res = await fetch(`https://api.github.com/users/${user}/events/public`);
+    if (!res.ok) return;
+    const events = await res.json();
+    let count = 1;
+    for (const ev of events) {
+      if (count > 3) break;
+      let desc = '';
+      if (ev.type === 'PushEvent') desc = `Pushed to ${ev.repo.name.split('/')[1]}`;
+      else if (ev.type === 'CreateEvent') desc = `Created ${ev.repo.name.split('/')[1]}`;
+      else if (ev.type === 'WatchEvent') desc = `Starred ${ev.repo.name.split('/')[1]}`;
+      else if (ev.type === 'PullRequestEvent') desc = `PR in ${ev.repo.name.split('/')[1]}`;
+      else if (ev.type === 'IssuesEvent') desc = `Issue in ${ev.repo.name.split('/')[1]}`;
+      else continue;
+
+      const date = new Date(ev.created_at);
+      const diffHrs = Math.floor((new Date() - date) / (1000 * 60 * 60));
+      const timeStr = diffHrs < 1 ? 'Just now' : (diffHrs < 24 ? `${diffHrs}h ago` : `${Math.floor(diffHrs/24)}d ago`);
+
+      const lbl = document.getElementById(`actL${count}`);
+      const tme = document.getElementById(`actT${count}`);
+      if (lbl) lbl.textContent = desc;
+      if (tme) tme.textContent = timeStr;
+      count++;
+    }
+  } catch(e) {}
+}
+loadRecentActivity();
+
 /* ============================================================
    LEETCODE — uses alfa-leetcode-api.onrender.com (CORS-friendly)
    Three parallel calls:
@@ -381,6 +412,19 @@ setInterval(() => {
   if (document.activeElement !== inp) inp.placeholder = placeholders[++phIdx % placeholders.length];
 }, 4000);
 
+function parseMarkdown(text) {
+  let html = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`(.*?)`/g, '<code>$1</code>')
+    .replace(/^\s*\*\s+(.*)/gm, '<ul><li>$1</li></ul>')
+    .replace(/<\/ul>\n<ul>/g, '\n')
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+  return `<p>${html}</p>`.replace(/<p><\/p>/g, '').replace(/<br><\/p>/g, '</p>');
+}
+
 async function callGroq(prompt) {
   const key = LS.get('groqKey', '');
   if (!key) { document.getElementById('setupModal').classList.add('visible'); return; }
@@ -392,10 +436,19 @@ async function callGroq(prompt) {
   try {
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{role:'user', content:prompt}], max_tokens: 150 })
+      body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{role:'user', content:prompt}], max_tokens: 500 })
     });
     const data = await res.json();
-    out.innerHTML = data.choices[0].message.content.replace(/\n/g, '<br>');
+    const reply = data.choices[0].message.content;
+    out.innerHTML = parseMarkdown(reply);
+    
+    // Save to AI Memory
+    LS.set('lastQuery', prompt);
+    LS.set('lastSummary', reply.substring(0, 80) + '...');
+    const mT = document.getElementById('memTitle');
+    const mB = document.getElementById('memBody');
+    if (mT) mT.textContent = prompt;
+    if (mB) mB.textContent = reply.substring(0, 80) + '...';
   } catch(e) { out.innerHTML = 'Error fetching from Groq.'; }
 }
 
@@ -414,31 +467,51 @@ document.getElementById('searchInput').addEventListener('keydown', e => {
   if (e.key === 'Escape') document.getElementById('searchOutput').classList.remove('visible');
 });
 
+document.addEventListener('click', e => {
+  const container = document.querySelector('.search-container');
+  if (container && !container.contains(e.target)) {
+    document.getElementById('searchOutput').classList.remove('visible');
+  }
+});
+
+// Load AI Memory
+const mT = document.getElementById('memTitle');
+const mB = document.getElementById('memBody');
+if (mT) mT.textContent = LS.get('lastQuery', 'Linked List Cycle Detection');
+if (mB) mB.textContent = LS.get('lastSummary', 'We were discussing Floyd\'s Cycle Detection Algorithm.');
+
 // AI Coach & Insights Cache
 async function fetchAI() {
   const key = LS.get('groqKey', '');
   const today = new Date().toISOString().slice(0,10);
   if (!key) return;
 
-  if (LS.get('aiDate') !== today) {
-    try {
-      // Coach
-      let res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{role:'user', content:"User has solved 31 LeetCode problems. Current streak: 36 days. Weak areas: Dynamic Programming, Graphs. Strong areas: Arrays & Hashing. Give a short today's recommendation in under 30 words. Format as JSON: {body: '...', focus: '...', diff: '...', time: '...'}"}], response_format:{type:'json_object'} })
-      });
-      let data = await res.json();
-      let obj = JSON.parse(data.choices[0].message.content);
-      LS.setObj('aiCoach', obj);
+  const ghTotal = document.getElementById('ghTotalVal')?.textContent || '0';
+  const ghStreak = document.getElementById('ghCurStreak')?.textContent || '0';
+  const lcTotal = document.getElementById('lcTotalVal')?.textContent || '0';
+  const lcStreak = document.getElementById('lcCurStreak')?.textContent || '0';
 
-      // Insights
-      res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  if (LS.get('aiDate') !== today || !LS.get('aiStrengths')) {
+    try {
+      const prompt = `Developer stats: GitHub total ${ghTotal}, streak ${ghStreak}. LeetCode active days ${lcTotal}, streak ${lcStreak}.
+Give JSON:
+{
+  "coach": {"body": "short today's recommendation under 30 words", "focus": "e.g. Graphs", "diff": "Medium", "time": "35 min"},
+  "insights": {"body": "short summary of progress", "tag1": "weak topic 1", "tag2": "weak topic 2", "rec": "short advice"},
+  "strengths": [{"label": "Arrays", "value": "85%"}, {"label": "DP", "value": "40%"}, {"label": "Trees", "value": "60%"}, {"label": "Graphs", "value": "20%"}, {"label": "Linked List", "value": "70%"}]
+}
+Make strengths visually varied and plausible based on a typical learner.`;
+
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
-        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{role:'user', content:"Developer solved 31 LC problems. Weak: Binary Search, Sliding Window, DP. Strong: Arrays. Give JSON: {body: '...', tag1: '...', tag2: '...', rec: '...'}"}], response_format:{type:'json_object'} })
+        body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{role:'user', content:prompt}], response_format:{type:'json_object'} })
       });
-      data = await res.json();
-      obj = JSON.parse(data.choices[0].message.content);
-      LS.setObj('aiInsights', obj);
+      const data = await res.json();
+      const obj = JSON.parse(data.choices[0].message.content);
+      
+      LS.setObj('aiCoach', obj.coach || {});
+      LS.setObj('aiInsights', obj.insights || {});
+      LS.setObj('aiStrengths', obj.strengths || []);
       LS.set('aiDate', today);
     } catch(e) {}
   }
@@ -454,8 +527,21 @@ async function fetchAI() {
   document.getElementById('insT1').textContent = ins.tag1;
   document.getElementById('insT2').textContent = ins.tag2;
   document.getElementById('insRec').textContent = ins.rec;
+
+  const str = LS.getObj('aiStrengths', []);
+  if (str.length === 5) {
+    const list = document.getElementById('strList');
+    if (list) {
+      list.innerHTML = str.map(s => \`
+        <div class="prog-item">
+          <div class="prog-header"><span contenteditable="true" class="s-l">\${s.label}</span><span contenteditable="true" class="s-v">\${s.value}</span></div>
+          <div class="prog-track"><div class="prog-fill s-b" style="width: \${s.value}"></div></div>
+        </div>
+      \`).join('');
+    }
+  }
 }
-setTimeout(fetchAI, 1000);
+setTimeout(fetchAI, 3000);
 
 /* ============================================================
    SETTINGS & SETUP
@@ -661,3 +747,34 @@ if (document.getElementById('weatherImg')) {
     this.style.display = 'none';
   });
 }
+
+// === Daily Focus Dynamic Logic ===
+const focusKeys = ['fdL1', 'fdV1', 'fdL2', 'fdV2', 'fdL3', 'fdV3', 'fdTime', 'fdGoal'];
+focusKeys.forEach((id) => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  // Load saved values
+  const saved = LS.get(id, '');
+  if (saved) {
+    el.textContent = saved;
+    // Update bar if it's a value
+    if (id.startsWith('fdV')) {
+      const barId = 'fdB' + id.slice(3);
+      const bar = document.getElementById(barId);
+      if (bar) bar.style.width = saved.endsWith('%') ? saved : saved + '%';
+    }
+  }
+  // Save on edit and update bar
+  el.addEventListener('input', () => {
+    const val = el.textContent.trim();
+    LS.set(id, val);
+    if (id.startsWith('fdV')) {
+      const barId = 'fdB' + id.slice(3);
+      const bar = document.getElementById(barId);
+      if (bar) {
+        let percent = val.replace(/[^0-9]/g, '');
+        bar.style.width = (percent ? percent : 0) + '%';
+      }
+    }
+  });
+});
