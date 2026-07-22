@@ -660,22 +660,25 @@ function renderMilestone() {
   }
 }
 
-window.saveMilestone = () => {
+function saveMilestone() {
   const name   = document.getElementById('milestoneGoalName').value.trim();
   const target = parseInt(document.getElementById('milestoneTarget').value);
   const days   = parseInt(document.getElementById('milestoneDays').value);
   if (!name || !target || !days) { alert('Please fill in all three fields.'); return; }
   LS.setObj('milestone', { name, target, days, startDate: new Date().toISOString().slice(0, 10) });
   renderMilestone();
-};
+}
 
-window.resetMilestone = () => {
+function resetMilestone() {
   if (!confirm('Reset your milestone?')) return;
   localStorage.removeItem('milestone');
   renderMilestone();
-};
+}
 
 renderMilestone();
+
+document.getElementById('btnSetMilestone').addEventListener('click', saveMilestone);
+document.getElementById('btnResetMilestone').addEventListener('click', resetMilestone);
 
 /* ============================================================
    SETTINGS & SETUP
