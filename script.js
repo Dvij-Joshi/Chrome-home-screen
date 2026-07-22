@@ -631,12 +631,14 @@ function renderMilestone() {
   document.getElementById('milestoneSetup').style.display = 'none';
   document.getElementById('milestoneActive').style.display = 'block';
 
-  const current = parseInt(LS.get('solved', '0')) || 0;
-  const target   = goal.target;
-  const pct      = Math.min(Math.round((current / target) * 100), 100);
+  const totalSolved = parseInt(LS.get('solved', '0')) || 0;
+  const startSolved = goal.startSolved || 0;          // how many were solved when goal was set
+  const earned      = Math.max(0, totalSolved - startSolved); // solved since goal started
+  const target      = goal.target;
+  const pct         = Math.min(Math.round((earned / target) * 100), 100);
 
   document.getElementById('milestoneTitle').textContent = goal.name;
-  document.getElementById('milestoneCurrent').textContent = current;
+  document.getElementById('milestoneCurrent').textContent = earned;
   document.getElementById('milestoneTargetDisp').textContent = target;
   document.getElementById('milestonePercent').textContent = pct + '%';
   setTimeout(() => { document.getElementById('milestoneFill').style.width = pct + '%'; }, 100);
@@ -649,7 +651,7 @@ function renderMilestone() {
   document.getElementById('milestoneDaysLeft').textContent = daysLeft > 0 ? `${daysLeft}d left` : 'Deadline passed!';
 
   // Pace calculation
-  const remaining = target - current;
+  const remaining = target - earned;
   if (remaining <= 0) {
     document.getElementById('milestonePace').textContent = '🎉 Goal achieved!';
   } else if (daysLeft > 0) {
@@ -665,7 +667,8 @@ function saveMilestone() {
   const target = parseInt(document.getElementById('milestoneTarget').value);
   const days   = parseInt(document.getElementById('milestoneDays').value);
   if (!name || !target || !days) { alert('Please fill in all three fields.'); return; }
-  LS.setObj('milestone', { name, target, days, startDate: new Date().toISOString().slice(0, 10) });
+  const startSolved = parseInt(LS.get('solved', '0')) || 0;  // snapshot current count
+  LS.setObj('milestone', { name, target, days, startDate: new Date().toISOString().slice(0, 10), startSolved });
   renderMilestone();
 }
 
