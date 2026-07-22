@@ -81,19 +81,8 @@ function bindEdit(id, key, defaultVal, isNum = false) {
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
 }
-bindEdit('dsaStreak', 'streak', '--', true);
-bindEdit('dsaSolved', 'solved', '--', true);
-bindEdit('dsaEasy', 'easy', '--', true);
-bindEdit('dsaMed', 'medium', '--', true);
-bindEdit('dsaHard', 'hard', '--', true);
-
-bindEdit('fdL1', 'fdL1', '--'); bindEdit('fdV1', 'fdV1', '0%'); document.getElementById('fdB1').style.width = LS.get('fdV1','0%');
-bindEdit('fdL2', 'fdL2', '--'); bindEdit('fdV2', 'fdV2', '0%'); document.getElementById('fdB2').style.width = LS.get('fdV2','0%');
-bindEdit('fdL3', 'fdL3', '--'); bindEdit('fdV3', 'fdV3', '0%'); document.getElementById('fdB3').style.width = LS.get('fdV3','0%');
-['fdV1','fdV2','fdV3'].forEach(id => document.getElementById(id).addEventListener('input', e => document.getElementById(id.replace('V','B')).style.width = e.target.textContent));
-
-bindEdit('fdTime', 'focused_time', '0h 0m');
-bindEdit('fdGoal', 'goals', '0/0');
+// DSA stats are populated live by loadLC() — no manual bindEdit needed
+// Daily Focus card removed — fdL1/V1/etc. no longer in DOM
 bindEdit('memTitle', 'ai_memory_title', 'AI Memory Empty');
 bindEdit('memBody', 'ai_memory_body', 'Complete setup and use the search bar to start filling your memory.');
 
@@ -260,6 +249,14 @@ async function loadGH() {
     document.getElementById('ghMaxStreak').textContent = maxS;
     document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
     renderMap(document.getElementById('ghWrap'), sorted);
+
+    // GitHub Profile card
+    const profileUrl = `https://github.com/${ghUser}`;
+    const el = document.getElementById('ghProfileLink'); if (el) el.href = profileUrl;
+    const rl = document.getElementById('ghRepoLink'); if (rl) rl.href = profileUrl;
+    const av = document.getElementById('ghAvatar'); if (av) av.textContent = ghUser.charAt(0).toUpperCase();
+    const un = document.getElementById('ghUsername'); if (un) un.textContent = `@${ghUser}`;
+    const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = `${total.toLocaleString()} contributions · ${curS} day streak`;
   } catch(e) {
     document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>';
   }
@@ -325,7 +322,8 @@ async function loadLC() {
       const p = await rProfile.json();
       const active = p.totalActiveDays ?? null;
       if (active !== null) {
-        document.getElementById('lcTotalVal').textContent = active;
+        const lcTv = document.getElementById('lcTotalVal'); if (lcTv) lcTv.textContent = active;
+        const lcAd = document.getElementById('lcActiveDays'); if (lcAd) lcAd.textContent = active;
       }
     }
 
@@ -379,6 +377,15 @@ async function loadLC() {
       document.getElementById('lcCurStreak').textContent = lcStreak;
       document.getElementById('dsaStreak').textContent = lcStreak;
       LS.set('streak', String(lcStreak));
+
+      // Max streak from calendar
+      let lMax = 0, lTemp = 0;
+      days.forEach(d => { if (d.count > 0) { lTemp++; if (lTemp > lMax) lMax = lTemp; } else lTemp = 0; });
+      const lcMs = document.getElementById('lcMaxStreak'); if (lcMs) lcMs.textContent = lMax;
+
+      // LC profile link
+      const lcPl = document.getElementById('lcProfileLink');
+      if (lcPl) lcPl.href = `https://leetcode.com/u/${USER}/`;
     } else {
       throw new Error('Calendar fetch failed');
     }
