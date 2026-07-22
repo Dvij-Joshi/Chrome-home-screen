@@ -594,11 +594,7 @@ Make strengths visually varied and plausible based on a typical learner.`;
     } catch(e) {}
   }
   
-  const coach = LS.getObj('aiCoach', {body: 'Complete setup to view AI recommendation.', focus: '--', diff: '--', time: '--'});
-  if (coach.body) document.getElementById('coachBody').textContent = coach.body;
-  if (coach.focus) document.getElementById('coachFocus').textContent = coach.focus;
-  if (coach.diff) document.getElementById('coachDiff').textContent = coach.diff;
-  if (coach.time) document.getElementById('coachTime').textContent = coach.time;
+  // AI Coach card removed — coach fields no longer in DOM
 
   const ins = LS.getObj('aiInsights', {body: 'Complete setup to view insights.', tag1: '--', tag2: '--', rec: '--'});
   if (ins.body) document.getElementById('insBody').textContent = ins.body;
@@ -620,6 +616,66 @@ Make strengths visually varied and plausible based on a typical learner.`;
   }
 }
 setTimeout(fetchAI, 3000);
+
+/* ============================================================
+   MILESTONE TRACKER
+============================================================ */
+function renderMilestone() {
+  const goal = LS.getObj('milestone', null);
+  if (!goal) {
+    document.getElementById('milestoneSetup').style.display = 'block';
+    document.getElementById('milestoneActive').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('milestoneSetup').style.display = 'none';
+  document.getElementById('milestoneActive').style.display = 'block';
+
+  const current = parseInt(LS.get('solved', '0')) || 0;
+  const target   = goal.target;
+  const pct      = Math.min(Math.round((current / target) * 100), 100);
+
+  document.getElementById('milestoneTitle').textContent = goal.name;
+  document.getElementById('milestoneCurrent').textContent = current;
+  document.getElementById('milestoneTargetDisp').textContent = target;
+  document.getElementById('milestonePercent').textContent = pct + '%';
+  setTimeout(() => { document.getElementById('milestoneFill').style.width = pct + '%'; }, 100);
+
+  // Days remaining
+  const start    = new Date(goal.startDate);
+  const deadline = new Date(start);
+  deadline.setDate(start.getDate() + goal.days);
+  const daysLeft = Math.max(0, Math.ceil((deadline - new Date()) / 86400000));
+  document.getElementById('milestoneDaysLeft').textContent = daysLeft > 0 ? `${daysLeft}d left` : 'Deadline passed!';
+
+  // Pace calculation
+  const remaining = target - current;
+  if (remaining <= 0) {
+    document.getElementById('milestonePace').textContent = '🎉 Goal achieved!';
+  } else if (daysLeft > 0) {
+    const perDay = (remaining / daysLeft).toFixed(1);
+    document.getElementById('milestonePace').textContent = `Need ${perDay} problems/day to finish on time`;
+  } else {
+    document.getElementById('milestonePace').textContent = `${remaining} problems remaining — deadline passed`;
+  }
+}
+
+window.saveMilestone = () => {
+  const name   = document.getElementById('milestoneGoalName').value.trim();
+  const target = parseInt(document.getElementById('milestoneTarget').value);
+  const days   = parseInt(document.getElementById('milestoneDays').value);
+  if (!name || !target || !days) { alert('Please fill in all three fields.'); return; }
+  LS.setObj('milestone', { name, target, days, startDate: new Date().toISOString().slice(0, 10) });
+  renderMilestone();
+};
+
+window.resetMilestone = () => {
+  if (!confirm('Reset your milestone?')) return;
+  localStorage.removeItem('milestone');
+  renderMilestone();
+};
+
+renderMilestone();
 
 /* ============================================================
    SETTINGS & SETUP
@@ -818,11 +874,7 @@ document.querySelectorAll('.search-chip').forEach(chip => {
     }
   });
 });
-if (document.getElementById('btnStartFocus')) {
-  document.getElementById('btnStartFocus').addEventListener('click', () => {
-    submitSearch('Give me 2 medium LeetCode problems on Graphs with hints only, no solutions');
-  });
-}
+
 if (document.getElementById('btnAddNote')) {
   document.getElementById('btnAddNote').addEventListener('click', window.addNote || function(){});
 }

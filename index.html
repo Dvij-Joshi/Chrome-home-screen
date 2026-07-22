@@ -591,24 +591,34 @@
       <div class="heatmap-wrapper" id="ghWrap"></div>
     </div>
 
-    <div class="card">
+    <div class="card" id="milestoneCard">
       <div class="card-header">
-        <span class="card-title">AI Coach</span>
-        <!-- Sparkle / wand icon -->
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="1.8">
-          <path d="M12 2l1.5 4.5L18 8l-4.5 1.5L12 14l-1.5-4.5L6 8l4.5-1.5z"/>
-          <path d="M5 17l.75 2.25L8 20l-2.25.75L5 23l-.75-2.25L2 20l2.25-.75z"/>
-          <path d="M19 2l.5 1.5L21 4l-1.5.5L19 6l-.5-1.5L17 4l1.5-.5z"/>
-        </svg>
+        <span class="card-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px"><path d="M8 21l4-18 4 18"/><path d="M4 13h16"/></svg>MILESTONE</span>
+        <span id="milestoneDaysLeft" style="font-size:10px;color:var(--color-ink-muted)"></span>
       </div>
-      <div class="coach-sub">Today's Recommendation</div>
-      <div class="coach-body" id="coachBody">Complete setup to view AI recommendation.</div>
-      <div class="coach-list">
-        <div class="coach-row"><span class="coach-lbl">Focus Area</span><span class="coach-val accent" id="coachFocus">--</span></div>
-        <div class="coach-row"><span class="coach-lbl">Difficulty</span><span class="coach-val accent" id="coachDiff">--</span></div>
-        <div class="coach-row"><span class="coach-lbl">Estimated Time</span><span class="coach-val" id="coachTime">--</span></div>
+      <!-- Setup state -->
+      <div id="milestoneSetup">
+        <div style="font-size:12px;color:var(--color-ink-muted);margin:8px 0 12px">Set a coding goal to track your progress.</div>
+        <input id="milestoneGoalName" placeholder="Goal name (e.g. Solve 150 problems)" style="width:100%;padding:6px 10px;border:1px solid var(--color-border,rgba(0,0,0,.12));border-radius:6px;background:transparent;font-size:12px;color:inherit;margin-bottom:8px;box-sizing:border-box">
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <input id="milestoneTarget" type="number" min="1" placeholder="Target (e.g. 150)" style="flex:1;padding:6px 10px;border:1px solid var(--color-border,rgba(0,0,0,.12));border-radius:6px;background:transparent;font-size:12px;color:inherit;box-sizing:border-box">
+          <input id="milestoneDays" type="number" min="1" placeholder="Days (e.g. 90)" style="flex:1;padding:6px 10px;border:1px solid var(--color-border,rgba(0,0,0,.12));border-radius:6px;background:transparent;font-size:12px;color:inherit;box-sizing:border-box">
+        </div>
+        <button class="btn-primary" onclick="saveMilestone()" style="width:100%">Set Goal</button>
       </div>
-      <button class="btn-primary" id="btnStartFocus">Start Focus Session</button>
+      <!-- Active state -->
+      <div id="milestoneActive" style="display:none">
+        <div id="milestoneTitle" style="font-size:13px;font-weight:600;margin:4px 0 12px;color:var(--color-ink)"></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--color-ink-muted);margin-bottom:6px">
+          <span><span id="milestoneCurrent" style="font-size:18px;font-weight:700;color:var(--color-accent)">--</span> / <span id="milestoneTargetDisp">--</span></span>
+          <span id="milestonePercent" style="font-size:18px;font-weight:700;color:var(--color-ink-muted)">0%</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--color-border,rgba(0,0,0,.1));overflow:hidden;margin-bottom:12px">
+          <div id="milestoneFill" style="height:100%;border-radius:3px;background:var(--color-accent);width:0%;transition:width .6s ease"></div>
+        </div>
+        <div style="font-size:11px;color:var(--color-ink-muted)" id="milestonePace"></div>
+        <button class="btn-outline" onclick="resetMilestone()" style="margin-top:10px;width:100%;font-size:11px">Reset Goal</button>
+      </div>
     </div>
   </div>
 
