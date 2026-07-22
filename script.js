@@ -32,7 +32,8 @@ function updateClock() {
   if (hr >= 5 && hr < 12) gr = 'Good morning';
   else if (hr >= 12 && hr < 17) gr = 'Good afternoon';
   else if (hr >= 21 || hr < 5) gr = 'Still up';
-  document.getElementById('greetText').textContent = `${gr}, Dvij`;
+  const name = LS.get('firstName', 'Developer');
+  document.getElementById('greetText').textContent = `${gr}, ${name}`;
   
   const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' };
   document.getElementById('greetDate').textContent = d.toLocaleDateString('en-US', opts);
@@ -221,7 +222,8 @@ function renderMap(cont, days) {
 }
 
 async function loadGH() {
-  const ghUser = LS.get('ghUser', 'Dvij-Joshi');
+  const ghUser = LS.get('ghUser', '');
+  if (!ghUser) return;
   // Show skeleton while loading
   const ghWrap = document.getElementById('ghWrap');
   ghWrap.innerHTML = '<div class="skeleton-heatmap"></div>';
@@ -262,7 +264,8 @@ async function loadGH() {
 loadGH();
 
 async function loadRecentActivity() {
-  const user = LS.get('ghUser', 'Dvij-Joshi');
+  const user = LS.get('ghUser', '');
+  if (!user) return;
   try {
     const res = await fetch(`https://api.github.com/users/${user}/events/public`);
     if (!res.ok) return;
@@ -301,7 +304,8 @@ loadRecentActivity();
 ============================================================ */
 async function loadLC() {
   const BASE = 'https://alfa-leetcode-api.onrender.com';
-  const USER = LS.get('lcUser', 'dvij-joshi');
+  const USER = LS.get('lcUser', '');
+  if (!USER) return;
   const wrap = document.getElementById('lcWrap');
   // Show skeleton while API wakes up (Render free tier cold-start)
   wrap.innerHTML = '<div class="skeleton-heatmap"></div>';
@@ -373,7 +377,7 @@ async function loadLC() {
     }
 
   } catch(e) {
-    wrap.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/dvij-joshi" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>';
+    wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
   }
 }
 loadLC();
@@ -383,7 +387,8 @@ loadLC();
 ============================================================ */
 async function loadWeather() {
   try {
-    const city = LS.get('weatherCity', 'Vadodara');
+    const city = LS.get('weatherCity', '');
+    if (!city) return;
     // Geocode city name → lat/lon using Open-Meteo geocoding (free, no key)
     const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
     const geoData = await geo.json();
@@ -546,51 +551,69 @@ setTimeout(fetchAI, 3000);
 /* ============================================================
    SETTINGS & SETUP
 ============================================================ */
-if (!LS.get('groqKey')) document.getElementById('setupModal').classList.add('visible');
-
-document.getElementById('setupSaveBtn').onclick = () => {
-  LS.set('groqKey', document.getElementById('setupKey').value);
-  document.getElementById('setupModal').classList.remove('visible');
-  fetchAI();
-};
+if (!LS.get('firstName') || !LS.get('ghUser')) {
+  document.getElementById('setCloseBtn').style.display = 'none'; // Force setup
+  document.getElementById('settingsModal').classList.add('visible');
+}
 
 document.getElementById('settingsBtn').onclick = () => {
-  document.getElementById('setGhUser').value   = LS.get('ghUser', 'Dvij-Joshi');
-  document.getElementById('setLcUser').value   = LS.get('lcUser', 'dvij-joshi');
-  document.getElementById('setCity').value     = LS.get('weatherCity', 'Vadodara');
-  document.getElementById('setLinkedIn').value = LS.get('linkedIn', 'https://linkedin.com/in/dvij-joshi');
-  document.getElementById('setPortfolio').value = LS.get('portfolio', 'https://dvij-joshi.vercel.app');
+  document.getElementById('setFirstName').value = LS.get('firstName', '');
+  document.getElementById('setGhUser').value   = LS.get('ghUser', '');
+  document.getElementById('setLcUser').value   = LS.get('lcUser', '');
+  document.getElementById('setCity').value     = LS.get('weatherCity', '');
+  document.getElementById('setLinkedIn').value = LS.get('linkedIn', '');
+  document.getElementById('setPortfolio').value = LS.get('portfolio', '');
   document.getElementById('setGroq').value     = LS.get('groqKey', '');
+  document.getElementById('setCloseBtn').style.display = 'inline-block';
   document.getElementById('settingsModal').classList.add('visible');
 };
 document.getElementById('setCloseBtn').onclick = () => document.getElementById('settingsModal').classList.remove('visible');
 document.getElementById('setSaveBtn').onclick = () => {
+  const fName = document.getElementById('setFirstName').value.trim();
   const ghUser = document.getElementById('setGhUser').value.trim();
   const lcUser = document.getElementById('setLcUser').value.trim();
   const city   = document.getElementById('setCity').value.trim();
+  
+  if (fName) LS.set('firstName', fName);
   if (ghUser) LS.set('ghUser', ghUser);
   if (lcUser) LS.set('lcUser', lcUser);
   if (city)   LS.set('weatherCity', city);
   LS.set('linkedIn',  document.getElementById('setLinkedIn').value);
   LS.set('portfolio', document.getElementById('setPortfolio').value);
   LS.set('groqKey',   document.getElementById('setGroq').value);
+  
   document.getElementById('settingsModal').classList.remove('visible');
   applyLinks();
-  // Re-fetch with new usernames / city
+  
+  // Update Greeting
+  const name = LS.get('firstName', 'Developer');
+  let gr = 'Good evening';
+  const hr = new Date().getHours();
+  if (hr >= 5 && hr < 12) gr = 'Good morning';
+  else if (hr >= 12 && hr < 17) gr = 'Good afternoon';
+  else if (hr >= 21 || hr < 5) gr = 'Still up';
+  const gt = document.getElementById('greetText');
+  if (gt) gt.textContent = `${gr}, ${name}`;
+
+  // Re-fetch all data
   loadGH();
+  loadRecentActivity();
   loadLC();
   loadWeather();
+  // Clear AI date to force a fresh fetch with new details
+  LS.set('aiDate', '');
+  fetchAI();
 };
 
 function applyLinks() {
-  const ghUser = LS.get('ghUser', 'Dvij-Joshi');
-  const lcUser = LS.get('lcUser', 'dvij-joshi');
+  const ghUser = LS.get('ghUser', '');
+  const lcUser = LS.get('lcUser', '');
   // Topbar nav links
   document.querySelectorAll('.gh-nav-link').forEach(el => el.href = `https://github.com/${ghUser}`);
   document.querySelectorAll('.lc-nav-link').forEach(el => el.href = `https://leetcode.com/u/${lcUser}/`);
-  document.getElementById('linkedInBtn').href  = LS.get('linkedIn',  'https://linkedin.com/in/dvij-joshi');
-  document.getElementById('linkInQa').href     = LS.get('linkedIn',  'https://linkedin.com/in/dvij-joshi');
-  document.getElementById('portfolioBtn').href = LS.get('portfolio', 'https://dvij-joshi.vercel.app');
+  document.getElementById('linkedInBtn').href  = LS.get('linkedIn',  '#');
+  document.getElementById('linkInQa').href     = LS.get('linkedIn',  '#');
+  document.getElementById('portfolioBtn').href = LS.get('portfolio', '#');
 }
 applyLinks();
 

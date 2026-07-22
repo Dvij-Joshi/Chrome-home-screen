@@ -512,7 +512,7 @@
   <!-- TOPBAR -->
   <header class="topbar">
     <div class="greeting">
-      <h1><span id="greetText">Good evening, Dvij</span><span class="dot">.</span></h1>
+      <h1><span id="greetText">Good evening, Developer</span><span class="dot">.</span></h1>
       <p id="greetDate">Tuesday, July 21, 2026</p>
     </div>
     
@@ -808,21 +808,13 @@
 </div>
 
 <!-- OVERLAYS -->
-<div class="overlay" id="setupModal">
-  <div class="modal">
-    <h2>Welcome to Dashboard v2</h2>
-    <p style="font-size:var(--text-sm);color:var(--color-ink-muted);margin-bottom:var(--space-4)">Enter your Groq API Key to enable the AI Coach and smart search. It is stored locally.</p>
-    <label>Groq API Key</label>
-    <input type="password" id="setupKey" placeholder="gsk_...">
-    <div class="modal-btns">
-      <button class="btn-primary" id="setupSaveBtn" style="padding:8px 16px;width:auto">Save</button>
-    </div>
-  </div>
-</div>
-
 <div class="overlay" id="settingsModal">
   <div class="modal" style="width:460px">
-    <h2>Settings</h2>
+    <h2>Welcome to Dashboard v2</h2>
+    <p style="font-size:var(--text-sm);color:var(--color-ink-muted);margin-bottom:var(--space-4)">Configure your developer details to fetch live stats.</p>
+
+    <label>First Name</label>
+    <input type="text" id="setFirstName" placeholder="e.g. John">
 
     <label>GitHub Username</label>
     <input type="text" id="setGhUser" placeholder="e.g. Dvij-Joshi">
