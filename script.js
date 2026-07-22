@@ -554,12 +554,7 @@ setTimeout(fetchAI, 3000);
 /* ============================================================
    SETTINGS & SETUP
 ============================================================ */
-if (!LS.get('firstName') || !LS.get('ghUser')) {
-  document.getElementById('setCloseBtn').style.display = 'none'; // Force setup
-  document.getElementById('settingsModal').classList.add('visible');
-}
-
-document.getElementById('settingsBtn').onclick = () => {
+function populateSettings() {
   document.getElementById('setFirstName').value = LS.get('firstName', '');
   document.getElementById('setGhUser').value   = LS.get('ghUser', '');
   document.getElementById('setLcUser').value   = LS.get('lcUser', '');
@@ -567,6 +562,16 @@ document.getElementById('settingsBtn').onclick = () => {
   document.getElementById('setLinkedIn').value = LS.get('linkedIn', '');
   document.getElementById('setPortfolio').value = LS.get('portfolio', '');
   document.getElementById('setGroq').value     = LS.get('groqKey', '');
+}
+
+if (!LS.get('firstName')) {
+  populateSettings();
+  document.getElementById('setCloseBtn').style.display = 'none'; // Force setup
+  document.getElementById('settingsModal').classList.add('visible');
+}
+
+document.getElementById('settingsBtn').onclick = () => {
+  populateSettings();
   document.getElementById('setCloseBtn').style.display = 'inline-block';
   document.getElementById('settingsModal').classList.add('visible');
 };
