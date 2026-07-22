@@ -79,24 +79,24 @@ function bindEdit(id, key, defaultVal, isNum = false) {
   });
   el.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); el.blur(); } });
 }
-bindEdit('dsaStreak', 'streak', '36', true);
-bindEdit('dsaSolved', 'solved', '31', true);
-bindEdit('dsaEasy', 'easy', '21', true);
-bindEdit('dsaMed', 'medium', '9', true);
-bindEdit('dsaHard', 'hard', '1', true);
+bindEdit('dsaStreak', 'streak', '--', true);
+bindEdit('dsaSolved', 'solved', '--', true);
+bindEdit('dsaEasy', 'easy', '--', true);
+bindEdit('dsaMed', 'medium', '--', true);
+bindEdit('dsaHard', 'hard', '--', true);
 
-bindEdit('fdL1', 'fdL1', 'DSA Practice'); bindEdit('fdV1', 'fdV1', '60%'); document.getElementById('fdB1').style.width = LS.get('fdV1','60%');
-bindEdit('fdL2', 'fdL2', 'Bootcamp'); bindEdit('fdV2', 'fdV2', '30%'); document.getElementById('fdB2').style.width = LS.get('fdV2','30%');
-bindEdit('fdL3', 'fdL3', 'Project Building'); bindEdit('fdV3', 'fdV3', '40%'); document.getElementById('fdB3').style.width = LS.get('fdV3','40%');
+bindEdit('fdL1', 'fdL1', '--'); bindEdit('fdV1', 'fdV1', '0%'); document.getElementById('fdB1').style.width = LS.get('fdV1','0%');
+bindEdit('fdL2', 'fdL2', '--'); bindEdit('fdV2', 'fdV2', '0%'); document.getElementById('fdB2').style.width = LS.get('fdV2','0%');
+bindEdit('fdL3', 'fdL3', '--'); bindEdit('fdV3', 'fdV3', '0%'); document.getElementById('fdB3').style.width = LS.get('fdV3','0%');
 ['fdV1','fdV2','fdV3'].forEach(id => document.getElementById(id).addEventListener('input', e => document.getElementById(id.replace('V','B')).style.width = e.target.textContent));
 
-bindEdit('fdTime', 'focused_time', '7h 20m');
-bindEdit('fdGoal', 'goals', '2/3');
-bindEdit('memTitle', 'ai_memory_title', 'Linked List Cycle Detection');
-bindEdit('memBody', 'ai_memory_body', "We were discussing Floyd's Cycle Detection Algorithm.");
+bindEdit('fdTime', 'focused_time', '0h 0m');
+bindEdit('fdGoal', 'goals', '0/0');
+bindEdit('memTitle', 'ai_memory_title', 'AI Memory Empty');
+bindEdit('memBody', 'ai_memory_body', "Search or ask a question to start filling your memory.");
 
 const strKeys = ['strength_arrays','strength_trees','strength_dp','strength_graphs','strength_linked_list'];
-const strDefs = ['85%','65%','40%','25%','55%'];
+const strDefs = ['0%','0%','0%','0%','0%'];
 const strList = document.getElementById('strList');
 Array.from(strList.children).forEach((item, i) => {
   const lbl = item.querySelector('.s-l');
@@ -110,15 +110,15 @@ Array.from(strList.children).forEach((item, i) => {
   val.addEventListener('input', () => { LS.set(strKeys[i], val.textContent); bar.style.width = val.textContent; });
 });
 
-bindEdit('actL1','actL1','Solved Two Sum IV'); bindEdit('actT1','actT1','2h ago');
-bindEdit('actL2','actL2','Committed changes'); bindEdit('actT2','actT2','4h ago');
-bindEdit('actL3','actL3','Completed Bootcamp Module'); bindEdit('actT3','actT3','6h ago');
-bindEdit('actL4','actL4','Opened LeetCode Contest'); bindEdit('actT4','actT4','1d ago');
+bindEdit('actL1','actL1','--'); bindEdit('actT1','actT1','--');
+bindEdit('actL2','actL2','--'); bindEdit('actT2','actT2','--');
+bindEdit('actL3','actL3','--'); bindEdit('actT3','actT3','--');
+bindEdit('actL4','actL4','--'); bindEdit('actT4','actT4','--');
 
 /* ============================================================
    NOTES & SCHEDULE
 ============================================================ */
-let notes = LS.getObj('notes', ["Binary Search Templates","Revise Tree Traversals","Read System Design","Call Rahul regarding project"]);
+let notes = LS.getObj('notes', []);
 function renderNotes() {
   const c = document.getElementById('notesList');
   c.innerHTML = '';
@@ -135,7 +135,7 @@ function renderNotes() {
 window.addNote = () => { notes.push('New note'); LS.setObj('notes', notes); renderNotes(); };
 renderNotes();
 
-let schedule = LS.getObj('schedule', [{time:"10:00 AM", event:"OS Lecture"},{time:"04:00 PM", event:"Contest"},{time:"08:00 PM", event:"Workout"}]);
+let schedule = LS.getObj('schedule', []);
 function renderSch() {
   const c = document.getElementById('schList');
   c.innerHTML = '';
@@ -676,20 +676,8 @@ async function loadPlThumbnails() {
 /* ============================================================
    PLAYLISTS MANAGER
 ============================================================ */
-const defaultPlaylists = [
-  // Use a representative video URL for channels so the direct i.ytimg path works
-  { url: "https://www.youtube.com/playlist?list=PLjVLYmrlmjGfpDQOM-x_7YYB4C7gG5T3P", title: "Lo-Fi Coding Mix", src: "YouTube • Playlist" },
-  { url: "https://www.youtube.com/watch?v=WQoB2z67hvY", title: "DSA in One Shot", src: "CodeHelp • YouTube" },
-  { url: "https://www.youtube.com/watch?v=0bHoB32fuj0", title: "Striver A2Z DSA Sheet", src: "takeUforward • YouTube" },
-  { url: "https://www.youtube.com/playlist?list=PLpIkg8OmuX-LZB9jYzbbZchk277H5CbdY", title: "175-Problem Playlist", src: "Pratyush • YouTube" }
-];
-
-// Migrate: if stored playlists still use old @handle URLs, reset to defaults
+const defaultPlaylists = [];
 let playlists = LS.getObj('playlists', defaultPlaylists);
-if (playlists.some(p => p.url.includes('@CodeHelp') || p.url.includes('@takeUforward'))) {
-  playlists = defaultPlaylists;
-  LS.setObj('playlists', playlists);
-}
 
 function renderPlaylists() {
   const cont = document.getElementById('plList');
