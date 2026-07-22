@@ -95,7 +95,7 @@ bindEdit('fdL3', 'fdL3', '--'); bindEdit('fdV3', 'fdV3', '0%'); document.getElem
 bindEdit('fdTime', 'focused_time', '0h 0m');
 bindEdit('fdGoal', 'goals', '0/0');
 bindEdit('memTitle', 'ai_memory_title', 'AI Memory Empty');
-bindEdit('memBody', 'ai_memory_body', "Search or ask a question to start filling your memory.");
+bindEdit('memBody', 'ai_memory_body', 'Complete setup and use the search bar to start filling your memory.');
 
 const strKeys = ['strength_arrays','strength_trees','strength_dp','strength_graphs','strength_linked_list'];
 const strDefs = ['0%','0%','0%','0%','0%'];
@@ -108,14 +108,10 @@ Array.from(strList.children).forEach((item, i) => {
   val.textContent = LS.get(strKeys[i], strDefs[i]);
   bar.style.width = val.textContent;
   
-  lbl.addEventListener('input', () => LS.set(`str_l_${i}`, lbl.textContent));
-  val.addEventListener('input', () => { LS.set(strKeys[i], val.textContent); bar.style.width = val.textContent; });
+// strList rows are read-only (populated by AI) — no edit listeners needed
 });
 
-bindEdit('actL1','actL1','--'); bindEdit('actT1','actT1','--');
-bindEdit('actL2','actL2','--'); bindEdit('actT2','actT2','--');
-bindEdit('actL3','actL3','--'); bindEdit('actT3','actT3','--');
-bindEdit('actL4','actL4','--'); bindEdit('actT4','actT4','--');
+// actL/T are populated by GitHub API — we just ensure IDs exist for JS injection, no user editing
 
 /* ============================================================
    NOTES & SCHEDULE
@@ -439,7 +435,7 @@ function parseMarkdown(text) {
 
 async function callGroq(prompt) {
   const key = LS.get('groqKey', '');
-  if (!key) { document.getElementById('setupModal').classList.add('visible'); return; }
+  if (!key) { document.getElementById('settingsModal').classList.add('visible'); return; }
   
   const out = document.getElementById('searchOutput');
   out.classList.add('visible');
@@ -489,8 +485,8 @@ document.addEventListener('click', e => {
 // Load AI Memory
 const mT = document.getElementById('memTitle');
 const mB = document.getElementById('memBody');
-if (mT) mT.textContent = LS.get('lastQuery', 'Linked List Cycle Detection');
-if (mB) mB.textContent = LS.get('lastSummary', 'We were discussing Floyd\'s Cycle Detection Algorithm.');
+if (mT) mT.textContent = LS.get('lastQuery', 'AI Memory Empty');
+if (mB) mB.textContent = LS.get('lastSummary', 'Complete setup and use the search bar to start filling your memory.');
 
 // AI Coach & Insights Cache
 async function fetchAI() {
@@ -528,17 +524,17 @@ Make strengths visually varied and plausible based on a typical learner.`;
     } catch(e) {}
   }
   
-  const coach = LS.getObj('aiCoach', {body: 'Solve 2 Medium problems on Graphs to maintain your streak.', focus: 'Graphs', diff: 'Medium', time: '35 min'});
-  document.getElementById('coachBody').textContent = coach.body;
-  document.getElementById('coachFocus').textContent = coach.focus;
-  document.getElementById('coachDiff').textContent = coach.diff;
-  document.getElementById('coachTime').textContent = coach.time;
+  const coach = LS.getObj('aiCoach', {body: 'Complete setup to view AI recommendation.', focus: '--', diff: '--', time: '--'});
+  if (coach.body) document.getElementById('coachBody').textContent = coach.body;
+  if (coach.focus) document.getElementById('coachFocus').textContent = coach.focus;
+  if (coach.diff) document.getElementById('coachDiff').textContent = coach.diff;
+  if (coach.time) document.getElementById('coachTime').textContent = coach.time;
 
-  const ins = LS.getObj('aiInsights', {body: 'You solved 31 problems this month.', tag1: 'Binary Search', tag2: 'Sliding Window', rec: 'Strengthen your Graphs & DP.'});
-  document.getElementById('insBody').textContent = ins.body;
-  document.getElementById('insT1').textContent = ins.tag1;
-  document.getElementById('insT2').textContent = ins.tag2;
-  document.getElementById('insRec').textContent = ins.rec;
+  const ins = LS.getObj('aiInsights', {body: 'Complete setup to view insights.', tag1: '--', tag2: '--', rec: '--'});
+  if (ins.body) document.getElementById('insBody').textContent = ins.body;
+  if (ins.tag1) document.getElementById('insT1').textContent = ins.tag1;
+  if (ins.tag2) document.getElementById('insT2').textContent = ins.tag2;
+  if (ins.rec) document.getElementById('insRec').textContent = ins.rec;
 
   const str = LS.getObj('aiStrengths', []);
   if (str.length === 5) {
@@ -586,7 +582,8 @@ document.getElementById('setSaveBtn').onclick = () => {
   const lcUser = document.getElementById('setLcUser').value.trim();
   const city   = document.getElementById('setCity').value.trim();
   
-  if (fName) LS.set('firstName', fName);
+  if (!fName) { alert('Please enter your first name to continue.'); return; }
+  LS.set('firstName', fName);
   if (ghUser) LS.set('ghUser', ghUser);
   if (lcUser) LS.set('lcUser', lcUser);
   if (city)   LS.set('weatherCity', city);
@@ -767,33 +764,4 @@ if (document.getElementById('btnDetailedReport')) {
 if (document.getElementById('btnAddPlaylist')) {
   document.getElementById('btnAddPlaylist').addEventListener('click', window.addPlaylist || function(){});
 }
-// === Daily Focus Dynamic Logic ===
-const focusKeys = ['fdL1', 'fdV1', 'fdL2', 'fdV2', 'fdL3', 'fdV3', 'fdTime', 'fdGoal'];
-focusKeys.forEach((id) => {
-  const el = document.getElementById(id);
-  if (!el) return;
-  // Load saved values
-  const saved = LS.get(id, '');
-  if (saved) {
-    el.textContent = saved;
-    // Update bar if it's a value
-    if (id.startsWith('fdV')) {
-      const barId = 'fdB' + id.slice(3);
-      const bar = document.getElementById(barId);
-      if (bar) bar.style.width = saved.endsWith('%') ? saved : saved + '%';
-    }
-  }
-  // Save on edit and update bar
-  el.addEventListener('input', () => {
-    const val = el.textContent.trim();
-    LS.set(id, val);
-    if (id.startsWith('fdV')) {
-      const barId = 'fdB' + id.slice(3);
-      const bar = document.getElementById(barId);
-      if (bar) {
-        let percent = val.replace(/[^0-9]/g, '');
-        bar.style.width = (percent ? percent : 0) + '%';
-      }
-    }
-  });
-});
+// === Daily Focus is handled by bindEdit above — no duplicate listener needed ===
