@@ -264,34 +264,102 @@ async function loadGH() {
 loadGH();
 
 async function loadRecentActivity() {
-  const user = LS.get('ghUser', '');
-  if (!user) return;
-  try {
-    const res = await fetch(`https://api.github.com/users/${user}/events/public`);
-    if (!res.ok) return;
-    const events = await res.json();
-    let count = 1;
-    for (const ev of events) {
-      if (count > 3) break;
-      let desc = '';
-      if (ev.type === 'PushEvent') desc = `Pushed to ${ev.repo.name.split('/')[1]}`;
-      else if (ev.type === 'CreateEvent') desc = `Created ${ev.repo.name.split('/')[1]}`;
-      else if (ev.type === 'WatchEvent') desc = `Starred ${ev.repo.name.split('/')[1]}`;
-      else if (ev.type === 'PullRequestEvent') desc = `PR in ${ev.repo.name.split('/')[1]}`;
-      else if (ev.type === 'IssuesEvent') desc = `Issue in ${ev.repo.name.split('/')[1]}`;
-      else continue;
-
-      const date = new Date(ev.created_at);
-      const diffHrs = Math.floor((new Date() - date) / (1000 * 60 * 60));
-      const timeStr = diffHrs < 1 ? 'Just now' : (diffHrs < 24 ? `${diffHrs}h ago` : `${Math.floor(diffHrs/24)}d ago`);
-
-      const lbl = document.getElementById(`actL${count}`);
-      const tme = document.getElementById(`actT${count}`);
-      if (lbl) lbl.textContent = desc;
-      if (tme) tme.textContent = timeStr;
-      count++;
+  const setAct = (idBase, title, time) => {
+    const elT = document.getElementById(idBase + 'Title');
+    const elTm = document.getElementById(idBase + 'Time');
+    if (elT) {
+      elT.textContent = title;
+      elT.title = title; // tooltip for long titles
     }
-  } catch(e) {}
+    if (elTm) elTm.textContent = time;
+  };
+  
+  const getTimeStr = (dateObj) => {
+    if (!dateObj) return '--';
+    const diffMins = Math.floor((new Date() - dateObj) / (1000 * 60));
+    if (diffMins < 60) return diffMins < 2 ? 'Just now' : `${diffMins}m ago`;
+    const diffHrs = Math.floor(diffMins / 60);
+    if (diffHrs < 24) return `${diffHrs}h ago`;
+    return `${Math.floor(diffHrs/24)}d ago`;
+  };
+
+  // 1. LeetCode Activity
+  const lcUser = LS.get('lcUser', '');
+  if (lcUser) {
+    try {
+      const res = await fetch(`https://alfa-leetcode-api.onrender.com/${lcUser}/acSubmission`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.submission && data.submission.length > 0) {
+          const sub = data.submission[0];
+          setAct('lcAct', `Solved ${sub.title}`, getTimeStr(new Date(sub.timestamp * 1000)));
+        } else {
+          setAct('lcAct', 'No recent submissions', '--');
+        }
+      } else {
+        setAct('lcAct', 'LC API failed', '--');
+      }
+    } catch (e) {
+      setAct('lcAct', 'LC fetch error', '--');
+    }
+  } else {
+    setAct('lcAct', 'Set LeetCode username', '--');
+  }
+
+  // 2. GitHub Activity
+  const ghUser = LS.get('ghUser', '');
+  if (ghUser) {
+    try {
+      const res = await fetch(`https://api.github.com/users/${ghUser}/events/public`);
+      if (res.ok) {
+        const events = await res.json();
+        let desc = 'No recent activity';
+        let dateObj = null;
+        for (const ev of events) {
+          if (ev.type === 'PushEvent') desc = `Pushed to ${ev.repo.name.split('/')[1]}`;
+          else if (ev.type === 'CreateEvent') desc = `Created ${ev.repo.name.split('/')[1]}`;
+          else if (ev.type === 'WatchEvent') desc = `Starred ${ev.repo.name.split('/')[1]}`;
+          else if (ev.type === 'PullRequestEvent') desc = `PR in ${ev.repo.name.split('/')[1]}`;
+          else if (ev.type === 'IssuesEvent') desc = `Issue in ${ev.repo.name.split('/')[1]}`;
+          else continue;
+          dateObj = new Date(ev.created_at);
+          break;
+        }
+        setAct('ghAct', desc, getTimeStr(dateObj));
+      } else {
+        setAct('ghAct', 'GH API failed', '--');
+      }
+    } catch (e) {
+      setAct('ghAct', 'GH fetch error', '--');
+    }
+  } else {
+    setAct('ghAct', 'Set GitHub username', '--');
+  }
+
+  // 3 & 4. Chrome History
+  if (typeof chrome !== 'undefined' && chrome.history) {
+    chrome.history.search({ text: '', maxResults: 15 }, (results) => {
+      // Filter out extension pages and google searches to make it cleaner
+      const filtered = results.filter(r => 
+        !r.url.startsWith('chrome-extension://') && 
+        !r.url.startsWith('chrome://') && 
+        !r.url.includes('google.com/search')
+      );
+      if (filtered.length > 0) {
+        setAct('hist1', filtered[0].title || new URL(filtered[0].url).hostname, getTimeStr(new Date(filtered[0].lastVisitTime)));
+      } else {
+        setAct('hist1', 'No recent history', '--');
+      }
+      if (filtered.length > 1) {
+        setAct('hist2', filtered[1].title || new URL(filtered[1].url).hostname, getTimeStr(new Date(filtered[1].lastVisitTime)));
+      } else {
+        setAct('hist2', '--', '--');
+      }
+    });
+  } else {
+    setAct('hist1', 'History not accessible', '--');
+    setAct('hist2', '--', '--');
+  }
 }
 loadRecentActivity();
 
