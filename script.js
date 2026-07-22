@@ -532,12 +532,12 @@ Make strengths visually varied and plausible based on a typical learner.`;
   if (str.length === 5) {
     const list = document.getElementById('strList');
     if (list) {
-      list.innerHTML = str.map(s => \`
+      list.innerHTML = str.map(s => `
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">\${s.label}</span><span contenteditable="true" class="s-v">\${s.value}</span></div>
-          <div class="prog-track"><div class="prog-fill s-b" style="width: \${s.value}"></div></div>
+          <div class="prog-header"><span contenteditable="true" class="s-l">${s.label}</span><span contenteditable="true" class="s-v">${s.value}</span></div>
+          <div class="prog-track"><div class="prog-fill s-b" style="width: ${s.value}"></div></div>
         </div>
-      \`).join('');
+      `).join('');
     }
   }
 }
