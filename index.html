@@ -640,12 +640,19 @@
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px"><path d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9z"/></svg>AI MEMORY</span>
+        <span class="card-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>DAILY CHALLENGE</span>
+        <span class="mem-lbl" id="dailyDate" style="font-size:10px"></span>
       </div>
-      <div class="mem-lbl">Last session</div>
-      <div class="mem-title" contenteditable="true" id="memTitle">AI Memory Empty</div>
-      <div class="mem-body" contenteditable="true" id="memBody">Search or ask a question to start filling your memory.</div>
-      <a href="https://chat.openai.com" target="_blank" class="btn-outline">Continue Conversation →</a>
+      <div id="dailyLoading" style="color:var(--color-ink-muted);font-size:12px;margin:8px 0">Loading today's problem...</div>
+      <div id="dailyContent" style="display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span id="dailyDiff" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.05em"></span>
+        </div>
+        <div class="mem-title" id="dailyTitle" style="cursor:pointer"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px" id="dailyTags"></div>
+      </div>
+      <div id="dailyError" style="display:none;color:var(--color-ink-muted);font-size:12px">Could not load today's problem.</div>
+      <a href="#" target="_blank" id="dailyLink" class="btn-outline" style="margin-top:auto">Open Problem →</a>
     </div>
 
     <div class="card">

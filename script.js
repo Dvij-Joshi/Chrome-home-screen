@@ -411,6 +411,73 @@ async function loadWeather() {
 loadWeather();
 
 /* ============================================================
+   LEETCODE DAILY CHALLENGE
+============================================================ */
+async function loadDailyChallenge() {
+  const today = new Date().toISOString().slice(0, 10);
+  const cachedDate = LS.get('dailyDate', '');
+  const cachedTitle = LS.get('dailyTitle', '');
+  
+  // Use cache if already fetched today
+  if (cachedDate === today && cachedTitle) {
+    renderDailyChallenge({
+      title: cachedTitle,
+      link: LS.get('dailyLink', 'https://leetcode.com/problemset/'),
+      diff: LS.get('dailyDiff', '--'),
+      tags: JSON.parse(LS.get('dailyTags', '[]'))
+    });
+    return;
+  }
+
+  try {
+    const res = await fetch('https://alfa-leetcode-api.onrender.com/daily');
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    const q = data.question || data;
+    const title = q.questionTitle || q.title || 'Daily Problem';
+    const slug = q.titleSlug || q.questionTitleSlug || title.toLowerCase().replace(/\s+/g, '-');
+    const link = `https://leetcode.com/problems/${slug}/`;
+    const diff = q.difficulty || '--';
+    const tags = (q.topicTags || []).map(t => t.name || t).slice(0, 3);
+
+    LS.set('dailyDate', today);
+    LS.set('dailyTitle', title);
+    LS.set('dailyLink', link);
+    LS.set('dailyDiff', diff);
+    LS.set('dailyTags', JSON.stringify(tags));
+
+    renderDailyChallenge({ title, link, diff, tags });
+  } catch (e) {
+    document.getElementById('dailyLoading').style.display = 'none';
+    document.getElementById('dailyError').style.display = 'block';
+  }
+}
+
+function renderDailyChallenge({ title, link, diff, tags }) {
+  document.getElementById('dailyLoading').style.display = 'none';
+  document.getElementById('dailyContent').style.display = 'block';
+  document.getElementById('dailyTitle').textContent = title;
+  document.getElementById('dailyLink').href = link;
+  document.getElementById('dailyTitle').onclick = () => window.open(link, '_blank');
+
+  const diffEl = document.getElementById('dailyDiff');
+  diffEl.textContent = diff;
+  const diffColors = { Easy: 'var(--color-easy,#22c55e)', Medium: 'var(--color-medium,#f59e0b)', Hard: 'var(--color-hard,#ef4444)' };
+  diffEl.style.background = diffColors[diff] || 'var(--color-ink-muted)';
+  diffEl.style.color = '#fff';
+
+  const tagsEl = document.getElementById('dailyTags');
+  tagsEl.innerHTML = tags.map(t =>
+    `<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:var(--color-surface-2,rgba(0,0,0,.08));color:var(--color-ink-muted)">${t}</span>`
+  ).join('');
+
+  const d = new Date();
+  document.getElementById('dailyDate').textContent = d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+}
+
+loadDailyChallenge();
+
+/* ============================================================
    GROQ AI LOGIC
 ============================================================ */
 const placeholders = ["Ask anything or search...", "Ask a DSA question...", "What should I grind today?", "Open LeetCode", "Summarize my GitHub"];
