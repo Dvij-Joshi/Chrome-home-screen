@@ -216,6 +216,9 @@ function renderMap(cont, days) {
 async function loadGH() {
   const ghUser = LS.get('ghUser', '');
   if (!ghUser) return;
+  // Show skeleton while loading
+  const ghWrap = document.getElementById('ghWrap');
+  ghWrap.innerHTML = '<div class="skeleton-heatmap"></div>';
   try {
     const res = await fetch(`https://github-contributions-api.jogruber.de/v4/${ghUser}?y=last`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -233,82 +236,27 @@ async function loadGH() {
       else tempS = 0;
     });
 
+    // Walk back from today to compute current streak
+    // (ignore today if it has no contributions yet — it's still in progress)
     const past = sorted.filter(d => d.date <= todayStr);
     for (let i = past.length - 1; i >= 0; i--) {
       if (past[i].count > 0) curS++;
-      else { if (i < past.length - 1) break; }
+      else { if (i < past.length - 1) break; } // allow today to be 0
     }
 
-    const ghTv = document.getElementById('ghTotalVal'); if (ghTv) ghTv.textContent = total.toLocaleString();
-    const ghCs = document.getElementById('ghCurStreak'); if (ghCs) ghCs.textContent = curS;
-    const ghMs = document.getElementById('ghMaxStreak'); if (ghMs) ghMs.textContent = maxS;
-    const mr = document.getElementById('mRight'); if (mr) mr.textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
+    document.getElementById('ghTotalVal').textContent = total.toLocaleString();
+    document.getElementById('ghCurStreak').textContent = curS;
+    document.getElementById('ghMaxStreak').textContent = maxS;
+    document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
+    renderMap(document.getElementById('ghWrap'), sorted);
 
-    // GitHub Profile card
-    const profileUrl = `https://github.com/${ghUser}`;
-    const el = document.getElementById('ghProfileLink'); if (el) el.href = profileUrl;
-    const rl = document.getElementById('ghRepoLink'); if (rl) rl.href = profileUrl;
-    const av = document.getElementById('ghAvatar'); if (av) av.textContent = ghUser.charAt(0).toUpperCase();
-    const un = document.getElementById('ghUsername'); if (un) un.textContent = `@${ghUser}`;
-    const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = `${total.toLocaleString()} contributions · ${curS} day streak`;
+    // Profile card was removed, but we keep heatmap in ghWrap
+
   } catch(e) {
-    const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = 'Failed to load GitHub activity.';
+    document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>';
   }
 }
 loadGH();
-
-/* ============================================================
-   HACKER NEWS FEED
-============================================================ */
-async function loadHN() {
-  const feed = document.getElementById('hnFeed');
-  if (!feed) return;
-  try {
-    const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
-    if (!res.ok) throw new Error();
-    const ids = await res.json();
-    const topIds = ids.slice(0, 5); // get top 5
-
-    const stories = await Promise.all(topIds.map(async id => {
-      const itemRes = await fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`);
-      return await itemRes.json();
-    }));
-
-    feed.innerHTML = '';
-    stories.forEach(story => {
-      const a = document.createElement('a');
-      a.href = story.url || `https://news.ycombinator.com/item?id=${story.id}`;
-      a.target = '_blank';
-      a.className = 'link-hover';
-      a.style.display = 'block';
-      a.style.textDecoration = 'none';
-
-      const title = document.createElement('div');
-      title.style.fontSize = '12px';
-      title.style.color = 'var(--color-ink)';
-      title.style.fontWeight = '500';
-      title.style.whiteSpace = 'nowrap';
-      title.style.overflow = 'hidden';
-      title.style.textOverflow = 'ellipsis';
-      title.style.marginBottom = '2px';
-      title.textContent = story.title;
-
-      const meta = document.createElement('div');
-      meta.style.fontSize = '10px';
-      meta.style.color = 'var(--color-ink-muted)';
-      const domain = story.url ? new URL(story.url).hostname.replace('www.', '') : 'news.ycombinator.com';
-      meta.textContent = `${story.score} pts · ${domain}`;
-
-      a.appendChild(title);
-      a.appendChild(meta);
-      feed.appendChild(a);
-    });
-
-  } catch (e) {
-    feed.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load feed.</span>';
-  }
-}
-loadHN();
 
 async function loadRecentActivity() {
   const user = LS.get('ghUser', '');
@@ -446,6 +394,33 @@ async function loadLC() {
   }
 }
 loadLC();
+
+/* ============================================================
+   TECH NEWS (Hacker News via Algolia)
+============================================================ */
+async function loadTechNews() {
+  const list = document.getElementById('techNewsList');
+  if (!list) return;
+  try {
+    const res = await fetch('https://hn.algolia.com/api/v1/search?tags=front_page');
+    if (!res.ok) throw new Error('HN API failed');
+    const data = await res.json();
+    const hits = data.hits.slice(0, 3); // Take top 3 to fit height
+    
+    list.innerHTML = hits.map(item => `
+      <a href="${item.url || `https://news.ycombinator.com/item?id=${item.objectID}`}" target="_blank" style="display:block;text-decoration:none;padding:10px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06));transition:background 0.2s" onmouseover="this.style.background='var(--color-surface-3,rgba(0,0,0,.1))'" onmouseout="this.style.background='var(--color-surface-2,rgba(0,0,0,.06))'">
+        <div style="font-size:13px;font-weight:600;color:var(--color-ink);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${item.title}</div>
+        <div style="font-size:10px;color:var(--color-ink-muted);display:flex;justify-content:space-between">
+          <span>${item.points} pts by ${item.author}</span>
+          <span>${item.num_comments} comments</span>
+        </div>
+      </a>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load news.</span>';
+  }
+}
+loadTechNews();
 
 /* ============================================================
    WEATHER
