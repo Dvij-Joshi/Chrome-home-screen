@@ -250,8 +250,13 @@ async function loadGH() {
     document.getElementById('mRight').textContent = `${total.toLocaleString()} CONTRIBUTIONS`;
     renderMap(document.getElementById('ghWrap'), sorted);
 
-    // Profile card was removed, but we keep heatmap in ghWrap
-
+    // GitHub Profile card
+    const profileUrl = `https://github.com/${ghUser}`;
+    const el = document.getElementById('ghProfileLink'); if (el) el.href = profileUrl;
+    const rl = document.getElementById('ghRepoLink'); if (rl) rl.href = profileUrl;
+    const av = document.getElementById('ghAvatar'); if (av) av.textContent = ghUser.charAt(0).toUpperCase();
+    const un = document.getElementById('ghUsername'); if (un) un.textContent = `@${ghUser}`;
+    const sub = document.getElementById('ghProfileSub'); if (sub) sub.textContent = `${total.toLocaleString()} contributions · ${curS} day streak`;
   } catch(e) {
     document.getElementById('ghWrap').innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load GitHub activity.</span>';
   }
@@ -394,33 +399,6 @@ async function loadLC() {
   }
 }
 loadLC();
-
-/* ============================================================
-   TECH NEWS (Hacker News via Algolia)
-============================================================ */
-async function loadTechNews() {
-  const list = document.getElementById('techNewsList');
-  if (!list) return;
-  try {
-    const res = await fetch('https://hn.algolia.com/api/v1/search?tags=front_page');
-    if (!res.ok) throw new Error('HN API failed');
-    const data = await res.json();
-    const hits = data.hits.slice(0, 3); // Take top 3 to fit height
-    
-    list.innerHTML = hits.map(item => `
-      <a href="${item.url || `https://news.ycombinator.com/item?id=${item.objectID}`}" target="_blank" style="display:block;text-decoration:none;padding:10px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06));transition:background 0.2s" onmouseover="this.style.background='var(--color-surface-3,rgba(0,0,0,.1))'" onmouseout="this.style.background='var(--color-surface-2,rgba(0,0,0,.06))'">
-        <div style="font-size:13px;font-weight:600;color:var(--color-ink);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${item.title}</div>
-        <div style="font-size:10px;color:var(--color-ink-muted);display:flex;justify-content:space-between">
-          <span>${item.points} pts by ${item.author}</span>
-          <span>${item.num_comments} comments</span>
-        </div>
-      </a>
-    `).join('');
-  } catch(e) {
-    list.innerHTML = '<span style="color:var(--color-ink-muted);font-size:12px">Failed to load news.</span>';
-  }
-}
-loadTechNews();
 
 /* ============================================================
    WEATHER
@@ -917,11 +895,26 @@ document.querySelectorAll('.search-chip').forEach(chip => {
 if (document.getElementById('btnAddNote')) {
   document.getElementById('btnAddNote').addEventListener('click', window.addNote || function(){});
 }
-if (document.getElementById('btnDetailedReport')) {
-  document.getElementById('btnDetailedReport').addEventListener('click', () => {
-    submitSearch('Give me a detailed report on my LeetCode progress based on Arrays being strong and DP/Graphs being weak.');
-  });
+async function loadNews() {
+  const list = document.getElementById('newsList');
+  if (!list) return;
+  try {
+    const res = await fetch('https://hacker-news.firebaseio.com/v0/topstories.json');
+    const ids = await res.json();
+    const topIds = ids.slice(0, 4); // Fetch top 4
+    const stories = await Promise.all(topIds.map(id => fetch(`https://hacker-news.firebaseio.com/v0/item/${id}.json`).then(r => r.json())));
+    
+    list.innerHTML = stories.map(s => `
+      <a href="${s.url || `https://news.ycombinator.com/item?id=${s.id}`}" target="_blank" class="news-item" style="text-decoration:none;display:block;padding:8px;border-radius:8px;background:var(--color-surface-2,rgba(0,0,0,.06));transition:background 0.2s">
+        <div style="font-size:12px;font-weight:600;color:var(--color-ink);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${s.title}</div>
+        <div style="font-size:10px;color:var(--color-ink-muted)">${s.score} pts · by ${s.by}</div>
+      </a>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = '<div style="color:var(--color-ink-muted);font-size:12px">Failed to load news.</div>';
+  }
 }
+loadNews();
 if (document.getElementById('btnAddPlaylist')) {
   document.getElementById('btnAddPlaylist').addEventListener('click', window.addPlaylist || function(){});
 }
