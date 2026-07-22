@@ -435,8 +435,8 @@
     .act-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
     .act-item { display: flex; align-items: center; gap: var(--space-2); }
     .act-icon { width: 16px; height: 16px; color: var(--color-ink-muted); }
-    .act-desc { font-size: var(--text-sm); color: var(--color-ink); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .act-time { font-size: var(--text-xs); color: var(--color-ink-muted); }
+    .act-desc { font-size: var(--text-sm); color: var(--color-ink); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .act-time { font-size: var(--text-xs); color: var(--color-ink-muted); flex-shrink: 0; }
 
     /* Playlists */
     .pl-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-3); }
