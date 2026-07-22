@@ -677,23 +677,23 @@
       </div>
       <div class="prog-list" id="strList">
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">--</span><span contenteditable="true" class="s-v">0%</span></div>
+          <div class="prog-header"><span class="s-l">--</span><span class="s-v">0%</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: 0%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">--</span><span contenteditable="true" class="s-v">0%</span></div>
+          <div class="prog-header"><span class="s-l">--</span><span class="s-v">0%</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: 0%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">--</span><span contenteditable="true" class="s-v">0%</span></div>
+          <div class="prog-header"><span class="s-l">--</span><span class="s-v">0%</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: 0%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">--</span><span contenteditable="true" class="s-v">0%</span></div>
+          <div class="prog-header"><span class="s-l">--</span><span class="s-v">0%</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: 0%"></div></div>
         </div>
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">--</span><span contenteditable="true" class="s-v">0%</span></div>
+          <div class="prog-header"><span class="s-l">--</span><span class="s-v">0%</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: 0%"></div></div>
         </div>
       </div>
@@ -722,23 +722,23 @@
       <div class="act-list">
         <div class="act-item">
           <svg class="act-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-          <span class="act-desc" contenteditable="true" id="actL1">--</span>
-          <span class="act-time" contenteditable="true" id="actT1">--</span>
+          <span class="act-desc" id="actL1">--</span>
+          <span class="act-time" id="actT1">--</span>
         </div>
         <div class="act-item">
           <svg class="act-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"></path></svg>
-          <span class="act-desc" contenteditable="true" id="actL2">--</span>
-          <span class="act-time" contenteditable="true" id="actT2">--</span>
+          <span class="act-desc" id="actL2">--</span>
+          <span class="act-time" id="actT2">--</span>
         </div>
         <div class="act-item">
           <svg class="act-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"></path></svg>
-          <span class="act-desc" contenteditable="true" id="actL3">--</span>
-          <span class="act-time" contenteditable="true" id="actT3">--</span>
+          <span class="act-desc" id="actL3">--</span>
+          <span class="act-time" id="actT3">--</span>
         </div>
         <div class="act-item">
           <svg class="act-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10M5 4h14a2 2 0 012 2v2a5 5 0 01-5 5H8a5 5 0 01-5-5V6a2 2 0 012-2z"></path></svg>
-          <span class="act-desc" contenteditable="true" id="actL4">--</span>
-          <span class="act-time" contenteditable="true" id="actT4">--</span>
+          <span class="act-desc" id="actL4">--</span>
+          <span class="act-time" id="actT4">--</span>
         </div>
       </div>
       <a href="#" class="link-accent">View All Activity →</a>
@@ -783,8 +783,9 @@
     </div>
 
     <div class="card">
-      <!-- [IMG: WEATHER | 80x80px | TARGET: weather icon | PROMPT: stylized sun illustration, warm amber and golden yellow, soft rays, minimal flat design, transparent background preferred, no text | MODEL: flux-dev ] -->
-      <img src="./assets/WEATHER.webp" class="weather-img" alt="Weather" id="weatherImg">
+      <svg id="weatherImg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" style="margin: 0 auto 12px auto; display: block; color: var(--color-ink-muted);">
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+      </svg>
       <div class="weather-val" id="weatherTemp">--°C</div>
       <div class="weather-city" id="weatherCity">Vadodara</div>
       <div class="weather-cond" id="weatherCond">--</div>

@@ -137,7 +137,11 @@ function renderNotes() {
 window.addNote = () => { notes.push('New note'); LS.setObj('notes', notes); renderNotes(); };
 renderNotes();
 
-let schedule = LS.getObj('schedule', []);
+let schedule = LS.getObj('schedule', [
+  {time: "Morning", event: "--"},
+  {time: "Noon", event: "--"},
+  {time: "Night", event: "--"}
+]);
 function renderSch() {
   const c = document.getElementById('schList');
   c.innerHTML = '';
@@ -542,7 +546,7 @@ Make strengths visually varied and plausible based on a typical learner.`;
     if (list) {
       list.innerHTML = str.map(s => `
         <div class="prog-item">
-          <div class="prog-header"><span contenteditable="true" class="s-l">${s.label}</span><span contenteditable="true" class="s-v">${s.value}</span></div>
+          <div class="prog-header"><span class="s-l">${s.label}</span><span class="s-v">${s.value}</span></div>
           <div class="prog-track"><div class="prog-fill s-b" style="width: ${s.value}"></div></div>
         </div>
       `).join('');
@@ -763,12 +767,6 @@ if (document.getElementById('btnDetailedReport')) {
 if (document.getElementById('btnAddPlaylist')) {
   document.getElementById('btnAddPlaylist').addEventListener('click', window.addPlaylist || function(){});
 }
-if (document.getElementById('weatherImg')) {
-  document.getElementById('weatherImg').addEventListener('error', function() {
-    this.style.display = 'none';
-  });
-}
-
 // === Daily Focus Dynamic Logic ===
 const focusKeys = ['fdL1', 'fdV1', 'fdL2', 'fdV2', 'fdL3', 'fdV3', 'fdTime', 'fdGoal'];
 focusKeys.forEach((id) => {
