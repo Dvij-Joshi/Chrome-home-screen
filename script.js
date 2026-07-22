@@ -103,25 +103,8 @@ Array.from(strList.children).forEach((item, i) => {
 // actL/T are populated by GitHub API — we just ensure IDs exist for JS injection, no user editing
 
 /* ============================================================
-   NOTES & SCHEDULE
+   SCHEDULE
 ============================================================ */
-let notes = LS.getObj('notes', []);
-function renderNotes() {
-  const c = document.getElementById('notesList');
-  c.innerHTML = '';
-  notes.forEach((n, i) => {
-    const d = document.createElement('div'); d.className = 'note-item';
-    const s = document.createElement('span'); s.contentEditable = true; s.textContent = n; s.style.flex = 1; s.style.outline = 'none';
-    s.addEventListener('input', () => { notes[i] = s.textContent; LS.setObj('notes', notes); });
-    s.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); s.blur(); } });
-    const x = document.createElement('span'); x.className = 'note-del'; x.textContent = '×';
-    x.onclick = () => { notes.splice(i, 1); LS.setObj('notes', notes); renderNotes(); };
-    d.appendChild(s); d.appendChild(x); c.appendChild(d);
-  });
-}
-window.addNote = () => { notes.push('New note'); LS.setObj('notes', notes); renderNotes(); };
-renderNotes();
-
 let schedule = LS.getObj('schedule', [
   {time: "Morning", event: "--"},
   {time: "Noon", event: "--"},
@@ -960,9 +943,7 @@ document.querySelectorAll('.search-chip').forEach(chip => {
   });
 });
 
-if (document.getElementById('btnAddNote')) {
-  document.getElementById('btnAddNote').addEventListener('click', window.addNote || function(){});
-}
+// btnAddNote listener removed
 async function loadNews() {
   const list = document.getElementById('newsList');
   if (!list) return;
