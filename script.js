@@ -321,18 +321,10 @@ async function loadLC() {
       fetch(`${BASE}/${USER}/calendar`).catch(() => null)
     ]);
 
-    // --- Profile: streak & totalActiveDays ---
     if (rProfile && rProfile.ok) {
       const p = await rProfile.json();
-      const streak   = p.streak        ?? p.currentStreak        ?? null;
-      const active   = p.totalActiveDays ?? p.totalActiveDays    ?? null;
-      if (streak  !== null) {
-        document.getElementById('lcCurStreak').textContent = streak;
-        // Also update the DSA Tracker streak (real data wins over manual)
-        document.getElementById('dsaStreak').textContent = streak;
-        LS.set('streak', String(streak));
-      }
-      if (active  !== null) {
+      const active = p.totalActiveDays ?? null;
+      if (active !== null) {
         document.getElementById('lcTotalVal').textContent = active;
       }
     }
@@ -375,6 +367,18 @@ async function loadLC() {
         days.push({ date: k, count: lcMap[k] || 0 });
       }
       renderMap(wrap, days);
+
+      // Compute streak from calendar (API doesn't reliably return streak field)
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let lcStreak = 0;
+      for (let i = days.length - 1; i >= 0; i--) {
+        // Allow today to have 0 (still in progress), but stop at first empty day before today
+        if (days[i].count > 0) { lcStreak++; }
+        else if (days[i].date < todayStr) { break; }
+      }
+      document.getElementById('lcCurStreak').textContent = lcStreak;
+      document.getElementById('dsaStreak').textContent = lcStreak;
+      LS.set('streak', String(lcStreak));
     } else {
       throw new Error('Calendar fetch failed');
     }
@@ -433,18 +437,17 @@ async function loadDailyChallenge() {
     const res = await fetch('https://alfa-leetcode-api.onrender.com/daily');
     if (!res.ok) throw new Error('fetch failed');
     const data = await res.json();
-    const q = data.question || data;
-    const title = q.questionTitle || q.title || 'Daily Problem';
-    const slug = q.titleSlug || q.questionTitleSlug || title.toLowerCase().replace(/\s+/g, '-');
-    const link = `https://leetcode.com/problems/${slug}/`;
-    const diff = q.difficulty || '--';
-    const tags = (q.topicTags || []).map(t => t.name || t).slice(0, 3);
+    // Fields are at root level — data.question is the raw HTML problem text, not metadata
+    const title = data.questionTitle || 'Daily Problem';
+    const link  = data.questionLink  || `https://leetcode.com/problems/${data.titleSlug || 'daily-problem'}/`;
+    const diff  = data.difficulty    || '--';
+    const tags  = (data.topicTags   || []).map(t => t.name || t).slice(0, 3);
 
-    LS.set('dailyDate', today);
+    LS.set('dailyDate',  today);
     LS.set('dailyTitle', title);
-    LS.set('dailyLink', link);
-    LS.set('dailyDiff', diff);
-    LS.set('dailyTags', JSON.stringify(tags));
+    LS.set('dailyLink',  link);
+    LS.set('dailyDiff',  diff);
+    LS.set('dailyTags',  JSON.stringify(tags));
 
     renderDailyChallenge({ title, link, diff, tags });
   } catch (e) {
