@@ -67,6 +67,7 @@ document.getElementById('quoteAuthor').textContent = `— ${quotes[qIdx].a}`;
 ============================================================ */
 function bindEdit(id, key, defaultVal, isNum = false) {
   const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = LS.get(key, defaultVal);
   el.addEventListener('input', () => {
     let val = el.textContent;
