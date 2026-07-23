@@ -2,7 +2,11 @@
 
 A beautiful, personal developer dashboard that replaces your Chrome New Tab page. Built for developers grinding DSA and shipping projects — editorial aesthetic, warm palette, zero frameworks.
 
-![Dashboard Preview](assets/preview.png)
+## 📸 Preview
+
+| Day | Arctic | Obsidian |
+|-----|--------|----------|
+| ![Day Theme](preview/Dashboard-Day.png) | ![Arctic Theme](preview/Dashboard-Arctic.png) | ![Obsidian Theme](preview/Dashboard-Obsidian.png) |
 
 ---
 
@@ -104,13 +108,13 @@ Then go to `chrome://extensions` → click the **↺ Reload** button on the Deve
 
 ## 🎨 Themes
 
-| Theme | Description |
-|-------|-------------|
-| **Day** | Warm paper tones — the default editorial look |
-| **Arctic** | Clean cool whites and blue-greys |
-| **Obsidian** | Deep dark mode with amber accents |
-
 Switch themes using the buttons in the top-right corner. Your preference is saved automatically.
+
+| Theme | Description | Preview |
+|-------|-------------|---------|
+| **Day** | Warm paper tones — the default editorial look | ![Day](preview/Dashboard-Day.png) |
+| **Arctic** | Clean cool whites and blue-greys | ![Arctic](preview/Dashboard-Arctic.png) |
+| **Obsidian** | Deep dark mode with amber accents | ![Obsidian](preview/Dashboard-Obsidian.png) |
 
 ---
 
