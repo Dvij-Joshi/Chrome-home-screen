@@ -357,7 +357,7 @@ loadRecentActivity();
      3. /username/calendar → submissionCalendar (timestamp→count map)
 ============================================================ */
 async function loadLC() {
-  const BASE = 'https://alfa-leetcode-api.onrender.com';
+  const BASE = 'https://leetcode-api-faisalshohag.vercel.app';
   const USER = LS.get('lcUser', '');
   if (!USER) return;
   const wrap = document.getElementById('lcWrap');
@@ -510,7 +510,7 @@ async function loadDailyChallenge() {
   }
 
   try {
-    const res = await fetch('https://alfa-leetcode-api.onrender.com/daily');
+    const res = await fetch('https://leetcode-api-faisalshohag.vercel.app/daily');
     if (!res.ok) throw new Error('fetch failed');
     const data = await res.json();
     // Fields are at root level — data.question is the raw HTML problem text, not metadata
