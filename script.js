@@ -273,12 +273,21 @@ async function loadRecentActivity() {
   const lcUser = LS.get('lcUser', '');
   if (lcUser) {
     try {
-      const res = await fetch(`https://alfa-leetcode-api.vercel.app/${lcUser}/acSubmission`);
+      const res = await fetch('https://leetcode.com/graphql', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' },
+        body: JSON.stringify({ query: `query recentAc($username: String!) {
+          recentAcSubmissionList(username: $username, limit: 1) {
+            title timestamp
+          }
+        }`, variables: { username: lcUser } })
+      });
       if (res.ok) {
         const data = await res.json();
-        if (data.submission && data.submission.length > 0) {
-          const sub = data.submission[0];
-          setAct('lcAct', `Solved ${sub.title}`, getTimeStr(new Date(sub.timestamp * 1000)));
+        const subs = data?.data?.recentAcSubmissionList;
+        if (subs && subs.length > 0) {
+          const sub = subs[0];
+          setAct('lcAct', `Solved ${sub.title}`, getTimeStr(new Date(Number(sub.timestamp) * 1000)));
         } else {
           setAct('lcAct', 'No recent submissions', '--');
         }
@@ -352,19 +361,19 @@ loadRecentActivity();
 /* ============================================================
    LEETCODE — uses alfa-leetcode-api.onrender.com (CORS-friendly)
    Three parallel calls:
-     1. /username          → streak, totalActiveDays
-     2. /username/solved   → easySolved, mediumSolved, hardSolved, solvedProblem
-     3. /username/calendar → submissionCalendar (timestamp→count map)
+/* ============================================================
+   LEETCODE — uses LeetCode's official GraphQL API (most reliable)
+   Queries: userPublicProfile, userCalendar, recentAcSubmissionList
 ============================================================ */
 async function loadLC() {
-  const BASE = 'https://leetcode-stats-api.herokuapp.com';
   const USER = LS.get('lcUser', '');
   if (!USER) return;
   const wrap = document.getElementById('lcWrap');
   wrap.innerHTML = '<div class="skeleton-heatmap"></div>';
 
-  // --- Show cached values immediately so nothing stays blank ---
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val && val !== 'null') el.textContent = val; };
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== null && val !== undefined) el.textContent = val; };
+
+  // Show cached values immediately
   setEl('dsaSolved',   LS.get('solved',  '--'));
   setEl('dsaEasy',     LS.get('easy',    '--'));
   setEl('dsaMed',      LS.get('medium',  '--'));
@@ -372,42 +381,62 @@ async function loadLC() {
   setEl('dsaStreak',   LS.get('streak',  '--'));
   setEl('lcCurStreak', LS.get('streak',  '--'));
 
-  // Profile link
   const lcPl = document.getElementById('lcProfileLink');
   if (lcPl) lcPl.href = `https://leetcode.com/u/${USER}/`;
 
-  try {
-    const cachedTime = parseInt(LS.get('lcCalTime', '0'));
-    const cachedData = LS.getObj('lcRawCal', null);
-    const useCache = cachedData && (Date.now() - cachedTime < 3600000); // 1 hour cache
+  const GQL = 'https://leetcode.com/graphql';
+  const headers = { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' };
 
-    let s = null;
-    if (useCache) {
-      s = cachedData;
-    } else {
-      const res = await fetch(`${BASE}/${USER}`).catch(() => null);
-      if (res && res.ok) {
-        s = await res.json();
-        if (s.status === 'success') {
-          LS.setObj('lcRawCal', s);
+  const cachedTime = parseInt(LS.get('lcCalTime', '0'));
+  const useCache = Date.now() - cachedTime < 3600000;
+
+  try {
+    // --- Solved counts ---
+    const solvedRes = await fetch(GQL, {
+      method: 'POST', headers,
+      body: JSON.stringify({ query: `query userSolved($username: String!) {
+        matchedUser(username: $username) {
+          submitStatsGlobal { acSubmissionNum { difficulty count } }
+        }
+      }`, variables: { username: USER } })
+    }).catch(() => null);
+
+    if (solvedRes && solvedRes.ok) {
+      const sd = await solvedRes.json();
+      const nums = sd?.data?.matchedUser?.submitStatsGlobal?.acSubmissionNum || [];
+      const get = (d) => (nums.find(x => x.difficulty === d)?.count ?? null);
+      const total = get('All'), easy = get('Easy'), medium = get('Medium'), hard = get('Hard');
+      if (total  !== null) { setEl('dsaSolved', total);  LS.set('solved',  String(total));  }
+      if (easy   !== null) { setEl('dsaEasy',   easy);   LS.set('easy',    String(easy));   }
+      if (medium !== null) { setEl('dsaMed',    medium); LS.set('medium',  String(medium)); }
+      if (hard   !== null) { setEl('dsaHard',   hard);   LS.set('hard',    String(hard));   }
+    }
+
+    // --- Calendar heatmap ---
+    let rawCal = LS.getObj('lcRawCal', null);
+    if (!useCache || !rawCal) {
+      const year = new Date().getFullYear();
+      const calRes = await fetch(GQL, {
+        method: 'POST', headers,
+        body: JSON.stringify({ query: `query userCalendar($username: String!, $year: Int) {
+          matchedUser(username: $username) {
+            userCalendar(year: $year) { submissionCalendar }
+          }
+        }`, variables: { username: USER, year } })
+      }).catch(() => null);
+
+      if (calRes && calRes.ok) {
+        const cd = await calRes.json();
+        const calStr = cd?.data?.matchedUser?.userCalendar?.submissionCalendar;
+        if (calStr) {
+          rawCal = JSON.parse(calStr);
+          LS.setObj('lcRawCal', rawCal);
           LS.set('lcCalTime', Date.now().toString());
         }
       }
     }
 
-    if (s && s.status === 'success') {
-      const total  = s.totalSolved ?? null;
-      const easy   = s.easySolved   ?? null;
-      const medium = s.mediumSolved ?? null;
-      const hard   = s.hardSolved   ?? null;
-      if (total  !== null) { setEl('dsaSolved', total);  LS.set('solved',  String(total));  }
-      if (easy   !== null) { setEl('dsaEasy',   easy);   LS.set('easy',    String(easy));   }
-      if (medium !== null) { setEl('dsaMed',    medium); LS.set('medium',  String(medium)); }
-      if (hard   !== null) { setEl('dsaHard',   hard);   LS.set('hard',    String(hard));   }
-
-      let rawCal = s.submissionCalendar || {};
-      if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
-
+    if (rawCal) {
       const lcMap = {};
       Object.keys(rawCal).forEach(ts => {
         lcMap[new Date(Number(ts) * 1000).toISOString().slice(0, 10)] = rawCal[ts];
@@ -416,31 +445,28 @@ async function loadLC() {
       const days = [];
       const today = new Date();
       for (let i = 364; i >= 0; i--) {
-        const d = new Date();
+        const d = new Date(today);
         d.setDate(today.getDate() - i);
         const k = d.toISOString().slice(0, 10);
         days.push({ date: k, count: lcMap[k] || 0 });
       }
       renderMap(wrap, days);
 
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = today.toISOString().slice(0, 10);
       let lcStreak = 0;
       for (let i = days.length - 1; i >= 0; i--) {
-        if (days[i].count > 0) { lcStreak++; }
-        else if (days[i].date < todayStr) { break; }
+        if (days[i].count > 0) lcStreak++;
+        else if (days[i].date < todayStr) break;
       }
       setEl('lcCurStreak', lcStreak); setEl('dsaStreak', lcStreak);
       LS.set('streak', String(lcStreak));
 
       let lMax = 0, lTemp = 0, lAct = 0;
-      days.forEach(d => { 
-        if (d.count > 0) { 
-          lTemp++; lAct++; 
-          if (lTemp > lMax) lMax = lTemp; 
-        } else lTemp = 0; 
+      days.forEach(d => {
+        if (d.count > 0) { lTemp++; lAct++; if (lTemp > lMax) lMax = lTemp; } else lTemp = 0;
       });
       setEl('lcActiveDays', lAct);
-      setEl('lcMaxStreak', Math.max(lMax, parseInt(LS.get('max_streak', '0')) || 0));
+      setEl('lcMaxStreak', lMax);
       setEl('lcTotalVal', lAct);
     } else {
       wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
@@ -450,6 +476,9 @@ async function loadLC() {
   }
 }
 loadLC();
+
+
+
 
 /* ============================================================
    WEATHER
@@ -496,14 +525,24 @@ async function loadDailyChallenge() {
   }
 
   try {
-    const res = await fetch('https://alfa-leetcode-api.vercel.app/daily');
+    const res = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Referer': 'https://leetcode.com' },
+      body: JSON.stringify({ query: `query questionOfToday {
+        activeDailyCodingChallengeQuestion {
+          date link
+          question { title difficulty topicTags { name } }
+        }
+      }` })
+    });
     if (!res.ok) throw new Error('fetch failed');
-    const data = await res.json();
-    // Fields are at root level — data.question is the raw HTML problem text, not metadata
-    const title = data.questionTitle || 'Daily Problem';
-    const link  = data.questionLink  || `https://leetcode.com/problems/${data.titleSlug || 'daily-problem'}/`;
-    const diff  = data.difficulty    || '--';
-    const tags  = (data.topicTags   || []).map(t => t.name || t).slice(0, 3);
+    const json = await res.json();
+    const q = json?.data?.activeDailyCodingChallengeQuestion;
+    if (!q) throw new Error('no data');
+    const title = q.question.title || 'Daily Problem';
+    const link  = q.link ? `https://leetcode.com${q.link}` : 'https://leetcode.com/problemset/';
+    const diff  = q.question.difficulty || '--';
+    const tags  = (q.question.topicTags || []).map(t => t.name).slice(0, 3);
 
     LS.set('dailyDate',  today);
     LS.set('dailyTitle', title);
