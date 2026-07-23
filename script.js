@@ -378,20 +378,25 @@ async function loadLC() {
 
   try {
     const cachedTime = parseInt(LS.get('lcCalTime', '0'));
-    const cachedCal = LS.getObj('lcRawCal', null);
-    const useCache = cachedCal && (Date.now() - cachedTime < 3600000); // 1 hour cache
+    const cachedData = LS.getObj('lcRawCal', null);
+    const useCache = cachedData && (Date.now() - cachedTime < 3600000); // 1 hour cache
 
-    // Fire all three requests in parallel; each can fail independently
-    const [rProfile, rSolved, rCal] = await Promise.all([
-      fetch(`${BASE}/${USER}`).catch(() => null),
-      fetch(`${BASE}/${USER}/solved`).catch(() => null),
-      useCache ? Promise.resolve({ ok: true, cached: true }) : fetch(`${BASE}/${USER}/calendar`).catch(() => null)
-    ]);
+    let s = null;
+    if (useCache) {
+      s = cachedData;
+    } else {
+      const res = await fetch(`${BASE}/${USER}`).catch(() => null);
+      if (res && res.ok) {
+        s = await res.json();
+        if (s.status === 'success') {
+          LS.setObj('lcRawCal', s);
+          LS.set('lcCalTime', Date.now().toString());
+        }
+      }
+    }
 
-    // --- Solved: difficulty breakdown & total ---
-    if (rSolved && rSolved.ok) {
-      const s = await rSolved.json();
-      const total  = s.solvedProblem ?? s.totalSolved ?? null;
+    if (s && s.status === 'success') {
+      const total  = s.totalSolved ?? null;
       const easy   = s.easySolved   ?? null;
       const medium = s.mediumSolved ?? null;
       const hard   = s.hardSolved   ?? null;
@@ -399,20 +404,9 @@ async function loadLC() {
       if (easy   !== null) { setEl('dsaEasy',   easy);   LS.set('easy',    String(easy));   }
       if (medium !== null) { setEl('dsaMed',    medium); LS.set('medium',  String(medium)); }
       if (hard   !== null) { setEl('dsaHard',   hard);   LS.set('hard',    String(hard));   }
-    }
 
-    // --- Calendar: heatmap + streak + active days (most reliable endpoint) ---
-    if (rCal && rCal.ok) {
-      let rawCal;
-      if (rCal.cached) {
-        rawCal = cachedCal;
-      } else {
-        const c = await rCal.json();
-        rawCal = c.submissionCalendar ?? c;
-        if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
-        LS.setObj('lcRawCal', rawCal);
-        LS.set('lcCalTime', Date.now().toString());
-      }
+      let rawCal = s.submissionCalendar || {};
+      if (typeof rawCal === 'string') rawCal = JSON.parse(rawCal);
 
       const lcMap = {};
       Object.keys(rawCal).forEach(ts => {
@@ -429,7 +423,6 @@ async function loadLC() {
       }
       renderMap(wrap, days);
 
-      // Current streak (allow today to be 0)
       const todayStr = new Date().toISOString().slice(0, 10);
       let lcStreak = 0;
       for (let i = days.length - 1; i >= 0; i--) {
@@ -439,26 +432,19 @@ async function loadLC() {
       setEl('lcCurStreak', lcStreak); setEl('dsaStreak', lcStreak);
       LS.set('streak', String(lcStreak));
 
-      // Max streak
-      let lMax = 0, lTemp = 0;
-      days.forEach(d => { if (d.count > 0) { lTemp++; if (lTemp > lMax) lMax = lTemp; } else lTemp = 0; });
-      setEl('lcMaxStreak', lMax); LS.set('lcMaxStreak', String(lMax));
-
-      // Active days computed from calendar (reliable — no profile endpoint needed)
-      const activeDays = days.filter(d => d.count > 0).length;
-      setEl('lcTotalVal',  activeDays); setEl('lcActiveDays', activeDays);
-      LS.set('lcActiveDays', String(activeDays));
-
-    } else if (!rCal || !rCal.ok) {
-      // Calendar failed — restore cached streak at least
-      setEl('lcCurStreak', LS.get('streak', '--'));
-      setEl('dsaStreak',   LS.get('streak', '--'));
-      setEl('lcMaxStreak', LS.get('lcMaxStreak', '--'));
-      setEl('lcActiveDays', LS.get('lcActiveDays', '--'));
-      setEl('lcTotalVal',   LS.get('lcActiveDays', '--'));
+      let lMax = 0, lTemp = 0, lAct = 0;
+      days.forEach(d => { 
+        if (d.count > 0) { 
+          lTemp++; lAct++; 
+          if (lTemp > lMax) lMax = lTemp; 
+        } else lTemp = 0; 
+      });
+      setEl('lcActiveDays', lAct);
+      setEl('lcMaxStreak', Math.max(lMax, parseInt(LS.get('max_streak', '0')) || 0));
+      setEl('lcTotalVal', lAct);
+    } else {
       wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
     }
-
   } catch(e) {
     wrap.innerHTML = `<span style="color:var(--color-ink-muted);font-size:12px">Could not load LeetCode data. <a href="https://leetcode.com/u/${USER}" target="_blank" style="color:var(--color-accent)">Open LeetCode →</a></span>`;
   }
@@ -510,7 +496,7 @@ async function loadDailyChallenge() {
   }
 
   try {
-    const res = await fetch('https://leetcode-api-faisalshohag.vercel.app/daily');
+    const res = await fetch('https://alfa-leetcode-api.vercel.app/daily');
     if (!res.ok) throw new Error('fetch failed');
     const data = await res.json();
     // Fields are at root level — data.question is the raw HTML problem text, not metadata
