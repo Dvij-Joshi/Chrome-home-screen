@@ -273,7 +273,7 @@ async function loadRecentActivity() {
   const lcUser = LS.get('lcUser', '');
   if (lcUser) {
     try {
-      const res = await fetch(`https://alfa-leetcode-api.onrender.com/${lcUser}/acSubmission`);
+      const res = await fetch(`https://alfa-leetcode-api.vercel.app/${lcUser}/acSubmission`);
       if (res.ok) {
         const data = await res.json();
         if (data.submission && data.submission.length > 0) {
@@ -357,7 +357,7 @@ loadRecentActivity();
      3. /username/calendar → submissionCalendar (timestamp→count map)
 ============================================================ */
 async function loadLC() {
-  const BASE = 'https://leetcode-api-faisalshohag.vercel.app';
+  const BASE = 'https://leetcode-stats-api.herokuapp.com';
   const USER = LS.get('lcUser', '');
   if (!USER) return;
   const wrap = document.getElementById('lcWrap');
